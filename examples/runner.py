@@ -11,6 +11,7 @@ import subprocess
 import time
 import random
 import string
+import config
 from enum import Enum
 from typing import Any
 
@@ -33,7 +34,6 @@ ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL = 30
 ZSEQUENCER_API_BATCHES_LIMIT = 100
 
 APP_NAME: str = "simple_app"
-BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 
 class OSType(Enum):
@@ -78,7 +78,7 @@ def run_macos_command_on_terminal(command: str, env_variables: dict):
     env_string = " && ".join(f'export {key}={shlex.quote(value)}' for key, value in env_variables.items())
     full_command = f"{env_string} && {command}"
 
-    cmd_temporary_file_path = os.path.join(BASE_DIRECTORY, 'old_runner', f'{generate_random_string()}.sh')
+    cmd_temporary_file_path = os.path.join(config.TMP_DIR, f'{generate_random_string()}.sh')
 
     # Write the command to a temporary bash file
     with open(cmd_temporary_file_path, 'w') as bash_file:
@@ -153,8 +153,6 @@ def run_command(
         env_variables: dict[str, str]
 ) -> None:
     """Run a command in a new terminal tab."""
-    parent_dir: str = os.path.dirname(BASE_DIRECTORY)
-    os.chdir(parent_dir)
 
     command: str = f"python -u {command_name} {command_args}; echo; read -p 'Press enter to exit...'"
 
@@ -169,9 +167,6 @@ def main() -> None:
 
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
-
-    parent_dir: str = os.path.dirname(BASE_DIRECTORY)
-    os.chdir(parent_dir)
 
     with open(file=NODES_FILE, mode="w", encoding="utf-8") as file:
         file.write(json.dumps(nodes_info_dict))
@@ -223,9 +218,9 @@ def main() -> None:
             "ZSEQUENCER_INIT_SEQUENCER_ID": list(nodes_info_dict.keys())[0],
             "ZSEQUENCER_NODES_SOURCE": "file",
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.12"
+            "ZSEQUENCER_VERSION": "v0.0.13"
         })
-        node_run_script_fullpath = os.path.join(os.path.dirname(BASE_DIRECTORY), "run.py")
+        node_run_script_fullpath = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, "run.py")
         run_command(command_name=node_run_script_fullpath,
                     command_args=f"{i + 1}",
                     env_variables=env_variables)
@@ -233,7 +228,7 @@ def main() -> None:
 
     time.sleep(5)
 
-    test_script_fullpath = os.path.join(BASE_DIRECTORY, f"{args.test}_test.py")
+    test_script_fullpath = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, f"{args.test}_test.py")
     run_command(command_name=test_script_fullpath,
                 command_args=f"--app_name {APP_NAME} --node_url http://localhost:{BASE_PORT + i + 1}",
                 env_variables=env_variables)
