@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import threading
 import socket
+import config
 from pathlib import Path
 from typing import Any, Optional
 from historical_nodes_registry import NodesRegistryClient, NodeInfo, run_registry_server
@@ -38,7 +39,7 @@ ZSEQUENCER_NODES_SOURCES = ["file",
                             "eigenlayer"]
 APP_NAME: str = "simple_app"
 
-BASE_DIRECTORY = './examples'
+# BASE_DIRECTORY = './examples'
 
 
 def generate_privates_and_nodes_info() -> tuple[list[str], dict[str, Any]]:
@@ -76,14 +77,15 @@ def generate_bash_command_file(
     """Run a command in a new terminal tab."""
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     parent_dir: str = os.path.dirname(script_dir)
+    virtual_env_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, config.ZSEQUENCER_PROJECT_VIRTUAL_ENV)
     os.chdir(parent_dir)
 
     env_script = "export " + " ".join([f"{key}='{value}'" for key, value in env_variables.items()])
-    command: str = f"python -u {command_name} {command_args}; echo; read -p 'Press enter to exit...'"
+    command: str = f"source {virtual_env_path}; python -u {command_name} {command_args}; echo; read -p 'Press enter to exit...'"
     full_command = f"{env_script} && {command}"
 
     if bash_filename is not None:
-        file_path = os.path.join(BASE_DIRECTORY, bash_filename)
+        file_path = os.path.join(config.TMP_DIR, bash_filename)
         if os.path.exists(file_path):
             os.remove(file_path)
         with open(file_path, "w+") as bash_file:
@@ -161,16 +163,16 @@ def prepare_nodes() -> None:
             "ZSEQUENCER_INIT_SEQUENCER_ID": list(nodes_info_dict.keys())[0],
             "ZSEQUENCER_NODES_SOURCE": ZSEQUENCER_NODES_SOURCES[1],
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.12",
+            "ZSEQUENCER_VERSION": "v0.0.13",
             "ZSEQUENCER_NODES_FILE": ""
         })
 
-        generate_bash_command_file(os.path.join(Path(__file__).parent.parent, "run.py"),
+        generate_bash_command_file(os.path.join(config.ZSEQUENCER_PROJECT_ROOT, "run.py"),
                                    f"{i + 1}",
                                    env_variables,
                                    f'node_{(i + 1)}.sh')
 
-        nodes_file_path = os.path.join(BASE_DIRECTORY, f'node_{(i + 1)}.sh')
+        nodes_file_path = os.path.join(config.TMP_DIR, f'node_{(i + 1)}.sh')
         subprocess.run(['chmod', '+x', nodes_file_path])
 
 
