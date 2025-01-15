@@ -1,31 +1,28 @@
 """This script sets up and runs a simple app network for testing."""
-import os
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import copy
 import json
-import time
-import secrets
-import threading
-import socket
-import shutil
+import os
 import random
-import requests
-import config
-from pathlib import Path
-from typing import Dict, Tuple, List
+import secrets
+import shutil
+import socket
+import threading
+import time
 from functools import reduce
+from typing import Dict, Tuple, List
+
+import requests
+from eigensdk.crypto.bls import attestation
 from pydantic import BaseModel, Field
+from requests.exceptions import RequestException
+from web3 import Account
+
+import config
 from historical_nodes_registry import (NodesRegistryClient,
                                        NodeInfo,
                                        SnapShotType,
                                        run_registry_server)
 from terminal_exeuction import run_command_on_terminal
-from eigensdk.crypto.bls import attestation
-from web3 import Account
-from requests.exceptions import RequestException
 
 
 class SimulationConfig(BaseModel):
@@ -69,8 +66,6 @@ class SimulationConfig(BaseModel):
 
 
 class DynamicNetworkSimulation:
-    # PROJECTS_VIRTUAL_ENV = 'venv/bin/activate'
-    # PROJECTS_ROOT_DIR = str(Path(__file__).parent.parent)
 
     def __init__(self, simulation_config: SimulationConfig):
         self.simulation_config = simulation_config
@@ -191,7 +186,7 @@ class DynamicNetworkSimulation:
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
             "ZSEQUENCER_NODES_SOURCE": self.simulation_config.ZSEQUENCER_NODES_SOURCES[1],
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.12",
+            "ZSEQUENCER_VERSION": "v0.0.13",
             "ZSEQUENCER_NODES_FILE": ""}
 
         return self.generate_node_execution_command(node_idx), env_variables

@@ -1,3 +1,9 @@
-from config import TMP_DIR
+from simulations.dynamic_network_simulation_with_nodes_registry import (SimulationConfig, DynamicNetworkSimulation)
 
-# print(TMP_DIR)
+
+def main():
+    DynamicNetworkSimulation(simulation_config=SimulationConfig()).run()
+
+
+if __name__ == '__main__':
+    main()
