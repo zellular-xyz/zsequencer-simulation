@@ -107,18 +107,6 @@ def run_command_on_terminal(command: str, env_variables):
         run_macos_command_on_terminal(command, env_variables)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="Run the specified test."
-    )
-    parser.add_argument(
-        "--test",
-        required=True,
-        choices=["general"],
-        help="the test name.",
-    )
-    return parser.parse_args()
 
 
 def generate_privates_and_nodes_info() -> tuple[list[str], dict[str, Any]]:
@@ -161,7 +149,6 @@ def run_command(
 
 def main() -> None:
     """Main function to run the setup and launch nodes and run the test."""
-    args: argparse.Namespace = parse_args()
 
     bls_privates_list, ecdsa_privates_list, nodes_info_dict = generate_privates_and_nodes_info()
 
@@ -228,7 +215,7 @@ def main() -> None:
 
     time.sleep(5)
 
-    test_script_fullpath = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, f"{args.test}_test.py")
+    test_script_fullpath = os.path.join(config.ROOT_DIR, 'examples', 'general_test.py')
     run_command(command_name=test_script_fullpath,
                 command_args=f"--app_name {APP_NAME} --node_url http://localhost:{BASE_PORT + i + 1}",
                 env_variables=env_variables)
