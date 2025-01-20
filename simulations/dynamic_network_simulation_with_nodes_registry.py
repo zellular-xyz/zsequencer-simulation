@@ -3,66 +3,24 @@ import copy
 import json
 import os
 import random
-import secrets
 import shutil
 import socket
 import threading
 import time
 from functools import reduce
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple
 
 import requests
 from eigensdk.crypto.bls import attestation
-from pydantic import BaseModel, Field
 from requests.exceptions import RequestException
 from web3 import Account
 
-import config
+import simulations.utils as simulation_utils
 from historical_nodes_registry import (NodesRegistryClient,
                                        NodeInfo,
                                        SnapShotType,
                                        run_registry_server)
-from terminal_exeuction import run_command_on_terminal
-
-
-class SimulationConfig(BaseModel):
-    NUM_INSTANCES: int = Field(3, description="Number of instances")
-    HOST: str = Field("http://127.0.0.1", description="Host address")
-    BASE_PORT: int = Field(6000, description="Base port number")
-    THRESHOLD_PERCENT: int = Field(67, description="Threshold percentage")
-    DST_DIR: str = Field("/tmp/zellular_dev_net", description="Destination directory")
-    APPS_FILE: str = Field("/tmp/zellular_dev_net/apps.json", description="Path to the apps file")
-    HISTORICAL_NODES_REGISTRY_HOST: str = Field("localhost", description="Historical nodes registry host")
-    HISTORICAL_NODES_REGISTRY_PORT: int = Field(8000, description="Historical nodes registry port")
-    HISTORICAL_NODES_REGISTRY_SOCKET: str = Field(
-        None,
-        description="Socket for historical nodes registry",
-    )
-    ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(1000, description="Snapshot chunk size for ZSequencer")
-    ZSEQUENCER_REMOVE_CHUNK_BORDER: int = Field(3, description="Chunk border for ZSequencer removal")
-    ZSEQUENCER_SEND_TXS_INTERVAL: float = Field(0.05, description="Interval for sending transactions in ZSequencer")
-    ZSEQUENCER_SYNC_INTERVAL: float = Field(0.05, description="Sync interval for ZSequencer")
-    ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
-    ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
-    ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL: int = Field(60, description="Interval to fetch apps and nodes")
-    ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100, description="API batches limit for ZSequencer")
-    ZSEQUENCER_NODES_SOURCES: List[str] = Field(
-        ["file", "historical_nodes_registry", "eigenlayer"],
-        description="Sources for nodes in ZSequencer",
-    )
-    APP_NAME: str = Field("simple_app", description="Name of the application")
-    # BASE_DIRECTORY: str = Field("./examples", description="Base directory path")
-    TIMESERIES_NODES_COUNT: List[int] = Field([3, 4, 6],
-                                              description="count of nodes available on network at different states")
-
-    class Config:
-        validate_assignment = True
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.HISTORICAL_NODES_REGISTRY_SOCKET = (
-            f"{self.HISTORICAL_NODES_REGISTRY_HOST}:{self.HISTORICAL_NODES_REGISTRY_PORT}"
-        )
+from simulations.config import SimulationConfig
 
 
 class DynamicNetworkSimulation:
@@ -76,47 +34,6 @@ class DynamicNetworkSimulation:
         self.network_nodes_state = None
         self.shutdown_event = threading.Event()
         self.nodes_registry_client = NodesRegistryClient(socket=self.simulation_config.HISTORICAL_NODES_REGISTRY_SOCKET)
-
-    @staticmethod
-    def delete_directory_contents(directory):
-        if not os.path.exists(directory):
-            raise FileNotFoundError(f"Directory '{directory}' does not exist.")
-
-        for filename in os.listdir(directory):
-            file_path = os.path.join(directory, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
-
-    @staticmethod
-    def generate_keys() -> Dict:
-        bls_private_key: str = secrets.token_hex(32)
-        bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(bls_private_key)
-        ecdsa_private_key: str = secrets.token_hex(32)
-
-        return dict(bls_private_key=bls_private_key,
-                    bls_key_pair=bls_key_pair,
-                    ecdsa_private_key=ecdsa_private_key)
-
-    @classmethod
-    def generate_node_execution_command(cls, node_idx: int) -> str:
-        """Run a command in a new terminal tab."""
-        script_dir: str = os.path.dirname(os.path.abspath(__file__))
-        parent_dir: str = os.path.dirname(script_dir)
-        os.chdir(parent_dir)
-
-        virtual_env_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, config.ZSEQUENCER_PROJECT_VIRTUAL_ENV)
-        node_runner_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, 'run.py')
-
-        return f"source {virtual_env_path}; python -u {node_runner_path} {str(node_idx)}; echo; read -p 'Press enter to exit...'"
-
-    @staticmethod
-    def launch_node(cmd, env_variables):
-        run_command_on_terminal(cmd, env_variables)
 
     def get_timeseries_last_node_idx(self):
         timeseries_nodes_count = self.simulation_config.TIMESERIES_NODES_COUNT
@@ -168,28 +85,15 @@ class DynamicNetworkSimulation:
             "ZSEQUENCER_BLS_KEY_PASSWORD": bls_passwd,
             "ZSEQUENCER_ECDSA_KEY_FILE": ecdsa_key_file,
             "ZSEQUENCER_ECDSA_KEY_PASSWORD": ecdsa_passwd,
-            "ZSEQUENCER_APPS_FILE": self.simulation_config.APPS_FILE,
             "ZSEQUENCER_SNAPSHOT_PATH": data_dir,
-            "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": self.simulation_config.HISTORICAL_NODES_REGISTRY_SOCKET,
-            "ZSEQUENCER_PORT": str(self.simulation_config.BASE_PORT + node_idx),
-            "ZSEQUENCER_SNAPSHOT_CHUNK": str(self.simulation_config.ZSEQUENCER_SNAPSHOT_CHUNK),
-            "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(self.simulation_config.ZSEQUENCER_REMOVE_CHUNK_BORDER),
-            "ZSEQUENCER_THRESHOLD_PERCENT": str(self.simulation_config.THRESHOLD_PERCENT),
-            "ZSEQUENCER_SEND_TXS_INTERVAL": str(self.simulation_config.ZSEQUENCER_SEND_TXS_INTERVAL),
-            "ZSEQUENCER_SYNC_INTERVAL": str(self.simulation_config.ZSEQUENCER_SYNC_INTERVAL),
-            "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(self.simulation_config.ZSEQUENCER_FINALIZATION_TIME_BORDER),
-            "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(
-                self.simulation_config.ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT),
-            "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(
-                self.simulation_config.ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL),
-            "ZSEQUENCER_API_BATCHES_LIMIT": str(self.simulation_config.ZSEQUENCER_API_BATCHES_LIMIT),
-            "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
-            "ZSEQUENCER_NODES_SOURCE": self.simulation_config.ZSEQUENCER_NODES_SOURCES[1],
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
             "ZSEQUENCER_VERSION": "v0.0.13",
-            "ZSEQUENCER_NODES_FILE": ""}
+            "ZSEQUENCER_NODES_FILE": "",
+            **self.simulation_config.to_dict(node_idx=node_idx,
+                                             sequencer_initial_address=sequencer_initial_address)
+        }
 
-        return self.generate_node_execution_command(node_idx), env_variables
+        return simulation_utils.generate_node_execution_command(node_idx), env_variables
 
     def wait_nodes_registry_server(self, timeout: float = 20.0, interval: float = 0.5):
         start_time = time.time()
@@ -210,7 +114,7 @@ class DynamicNetworkSimulation:
         initialized_network_snapshot: SnapShotType = {}
         execution_cmds = {}
         for node_idx in range(nodes_number):
-            keys = self.generate_keys()
+            keys = simulation_utils.generate_keys()
             node_info = self.generate_node_info(node_idx=node_idx, keys=keys)
             if node_idx == 0:
                 sequencer_address = node_info.id
@@ -223,7 +127,7 @@ class DynamicNetworkSimulation:
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
         for node_address, (cmd, env_variables) in execution_cmds.items():
-            self.launch_node(cmd, env_variables)
+            simulation_utils.launch_node(cmd, env_variables)
 
         self.sequencer_address, self.network_nodes_state = sequencer_address, initialized_network_snapshot
 
@@ -236,7 +140,7 @@ class DynamicNetworkSimulation:
             new_nodes_number = next_network_nodes_number - current_network_nodes_number
             new_nodes_cmds = {}
             for node_idx in range(first_new_node_idx, first_new_node_idx + new_nodes_number):
-                keys = self.generate_keys()
+                keys = simulation_utils.generate_keys()
                 node_info = self.generate_node_info(node_idx=node_idx, keys=keys)
                 next_network_state[node_info.id] = node_info
 
@@ -246,13 +150,13 @@ class DynamicNetworkSimulation:
 
             self.nodes_registry_client.add_snapshot(next_network_state)
             for node_address, (cmd, env_variables) in new_nodes_cmds.items():
-                self.launch_node(cmd, env_variables)
+                simulation_utils.launch_node(cmd, env_variables)
 
         self.network_nodes_state = next_network_state
         self.nodes_registry_client.add_snapshot(self.network_nodes_state)
 
     def simulate_network_nodes_transition(self):
-        self.delete_directory_contents(self.simulation_config.DST_DIR)
+        simulation_utils.delete_directory_contents(self.simulation_config.DST_DIR)
 
         if not os.path.exists(self.simulation_config.DST_DIR):
             os.makedirs(self.simulation_config.DST_DIR)
@@ -273,15 +177,15 @@ class DynamicNetworkSimulation:
                 next_network_nodes_number=self.simulation_config.TIMESERIES_NODES_COUNT[next_network_state_idx],
                 nodes_last_index=timeseries_nodes_last_idx[next_network_state_idx - 1])
 
-    @staticmethod
-    def generate_transactions(batch_size: int) -> List[Dict]:
-        return [
-            {
-                "operation": "foo",
-                "serial": tx_num,
-                "version": 6,
-            } for tx_num in range(batch_size)
-        ]
+    # @staticmethod
+    # def generate_transactions(batch_size: int) -> List[Dict]:
+    #     return [
+    #         {
+    #             "operation": "foo",
+    #             "serial": tx_num,
+    #             "version": 6,
+    #         } for tx_num in range(batch_size)
+    #     ]
 
     def simulate_send_batches(self):
         sending_batches_count = 0
@@ -292,7 +196,7 @@ class DynamicNetworkSimulation:
                 node_socket = self.network_nodes_state[random_node_address].socket
 
                 try:
-                    string_data = json.dumps(self.generate_transactions(random.randint(200, 600)))
+                    string_data = json.dumps(simulation_utils.generate_transactions(random.randint(200, 600)))
                     response: requests.Response = requests.put(
                         url=f"{node_socket}/node/{self.simulation_config.APP_NAME}/batches",
                         data=string_data,
@@ -334,9 +238,9 @@ class DynamicNetworkSimulation:
         self.shutdown_event.wait()
 
 
-def main():
+def simulate_dynamic_network():
     DynamicNetworkSimulation(simulation_config=SimulationConfig()).run()
 
 
 if __name__ == "__main__":
-    main()
+    simulate_dynamic_network()

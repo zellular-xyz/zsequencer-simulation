@@ -19,18 +19,18 @@ THREAD_NUMBERS_FOR_SENDING_TXS = 50
 zlogger = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="Simulate a simple app using Zsequencer."
-    )
-    parser.add_argument(
-        "--app_name", type=str, default="simple_app", help="Name of the application."
-    )
-    parser.add_argument(
-        "--node_url", type=str, default="http://localhost:6003", help="URL of the node."
-    )
-    return parser.parse_args()
+# def parse_args() -> argparse.Namespace:
+#     """Parse command-line arguments."""
+#     parser: argparse.ArgumentParser = argparse.ArgumentParser(
+#         description="Simulate a simple app using Zsequencer."
+#     )
+#     parser.add_argument(
+#         "--app_name", type=str, default="simple_app", help="Name of the application."
+#     )
+#     parser.add_argument(
+#         "--node_url", type=str, default="http://localhost:6003", help="URL of the node."
+#     )
+#     return parser.parse_args()
 
 
 def check_state(
@@ -118,16 +118,18 @@ def generate_dummy_transactions(
 
 def main() -> None:
     """Run the simple app."""
-    args: argparse.Namespace = parse_args()
+    # args: argparse.Namespace = parse_args()
+    app_name= 'simple_app'
+    node_url = 'http://37.27.41.237:6001'
     batches: list[dict[str, Any]] = generate_dummy_transactions(
         BATCH_SIZE, BATCH_NUMBER
     )
     sender_thread: threading.Thread = threading.Thread(
-        target=send_batches_with_threads, args=[args.app_name, batches, args.node_url, THREAD_NUMBERS_FOR_SENDING_TXS]
+        target=send_batches_with_threads, args=[app_name, batches, node_url, THREAD_NUMBERS_FOR_SENDING_TXS]
     )
     sync_thread: threading.Thread = threading.Thread(
         target=check_state,
-        args=[args.app_name, args.node_url, BATCH_NUMBER, BATCH_SIZE],
+        args=[app_name, node_url, BATCH_NUMBER, BATCH_SIZE],
     )
 
     sender_thread.start()
