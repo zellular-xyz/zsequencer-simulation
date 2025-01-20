@@ -15,7 +15,7 @@ from eigensdk.crypto.bls import attestation
 from requests.exceptions import RequestException
 from web3 import Account
 
-import simulations.utils as simulation_utils
+import simulations.utils as simulations_utils
 from historical_nodes_registry import (NodesRegistryClient,
                                        NodeInfo,
                                        SnapShotType,
@@ -44,25 +44,18 @@ class DynamicNetworkSimulation:
                                        else acc[-1]], range(1, len(timeseries_nodes_count)),
                       [timeseries_nodes_count[0] - 1])
 
-    def generate_node_info(self, node_idx: int, keys: Dict) -> NodeInfo:
-        bls_private_key, bls_key_pair, ecdsa_private_key = (keys.get('bls_private_key'),
-                                                            keys.get('bls_key_pair'),
-                                                            keys.get('ecdsa_private_key'))
-        address = Account().from_key(ecdsa_private_key).address.lower()
-
+    def generate_node_info(self, node_idx: int, keys: simulations_utils.Keys) -> NodeInfo:
+        address = Account().from_key(keys.ecdsa_private_key).address.lower()
         return NodeInfo(id=address,
-                        public_key_g2=bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
+                        public_key_g2=keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
                         address=address,
                         socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.BASE_PORT + node_idx)}",
                         stake=10)
 
     def prepare_node(self,
                      node_idx: int,
-                     keys: Dict,
+                     keys: simulations_utils.Keys,
                      sequencer_initial_address: str) -> Tuple[str, Dict]:
-        bls_private_key, bls_key_pair, ecdsa_private_key = (keys.get('bls_private_key'),
-                                                            keys.get('bls_key_pair'),
-                                                            keys.get('ecdsa_private_key'))
 
         DST_DIR = self.simulation_config.DST_DIR
         data_dir: str = f"{DST_DIR}/db_{node_idx}"
@@ -71,12 +64,12 @@ class DynamicNetworkSimulation:
 
         bls_key_file: str = f"{DST_DIR}/bls_key{node_idx}.json"
         bls_passwd: str = f'a{node_idx}'
-        bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(bls_private_key)
+        bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(keys.bls_private_key)
         bls_key_pair.save_to_file(bls_key_file, bls_passwd)
 
         ecdsa_key_file: str = f"{DST_DIR}/ecdsa_key{node_idx}.json"
         ecdsa_passwd: str = f'b{node_idx}'
-        encrypted_json = Account.encrypt(ecdsa_private_key, ecdsa_passwd)
+        encrypted_json = Account.encrypt(keys.ecdsa_private_key, ecdsa_passwd)
         with open(ecdsa_key_file, 'w') as f:
             f.write(json.dumps(encrypted_json))
 
@@ -93,7 +86,7 @@ class DynamicNetworkSimulation:
                                              sequencer_initial_address=sequencer_initial_address)
         }
 
-        return simulation_utils.generate_node_execution_command(node_idx), env_variables
+        return simulations_utils.generate_node_execution_command(node_idx), env_variables
 
     def wait_nodes_registry_server(self, timeout: float = 20.0, interval: float = 0.5):
         start_time = time.time()
@@ -114,7 +107,7 @@ class DynamicNetworkSimulation:
         initialized_network_snapshot: SnapShotType = {}
         execution_cmds = {}
         for node_idx in range(nodes_number):
-            keys = simulation_utils.generate_keys()
+            keys = simulations_utils.generate_keys()
             node_info = self.generate_node_info(node_idx=node_idx, keys=keys)
             if node_idx == 0:
                 sequencer_address = node_info.id
@@ -127,7 +120,7 @@ class DynamicNetworkSimulation:
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
         for node_address, (cmd, env_variables) in execution_cmds.items():
-            simulation_utils.launch_node(cmd, env_variables)
+            simulations_utils.launch_node(cmd, env_variables)
 
         self.sequencer_address, self.network_nodes_state = sequencer_address, initialized_network_snapshot
 
@@ -140,7 +133,7 @@ class DynamicNetworkSimulation:
             new_nodes_number = next_network_nodes_number - current_network_nodes_number
             new_nodes_cmds = {}
             for node_idx in range(first_new_node_idx, first_new_node_idx + new_nodes_number):
-                keys = simulation_utils.generate_keys()
+                keys = simulations_utils.generate_keys()
                 node_info = self.generate_node_info(node_idx=node_idx, keys=keys)
                 next_network_state[node_info.id] = node_info
 
@@ -150,13 +143,13 @@ class DynamicNetworkSimulation:
 
             self.nodes_registry_client.add_snapshot(next_network_state)
             for node_address, (cmd, env_variables) in new_nodes_cmds.items():
-                simulation_utils.launch_node(cmd, env_variables)
+                simulations_utils.launch_node(cmd, env_variables)
 
         self.network_nodes_state = next_network_state
         self.nodes_registry_client.add_snapshot(self.network_nodes_state)
 
     def simulate_network_nodes_transition(self):
-        simulation_utils.delete_directory_contents(self.simulation_config.DST_DIR)
+        simulations_utils.delete_directory_contents(self.simulation_config.DST_DIR)
 
         if not os.path.exists(self.simulation_config.DST_DIR):
             os.makedirs(self.simulation_config.DST_DIR)
@@ -177,16 +170,6 @@ class DynamicNetworkSimulation:
                 next_network_nodes_number=self.simulation_config.TIMESERIES_NODES_COUNT[next_network_state_idx],
                 nodes_last_index=timeseries_nodes_last_idx[next_network_state_idx - 1])
 
-    # @staticmethod
-    # def generate_transactions(batch_size: int) -> List[Dict]:
-    #     return [
-    #         {
-    #             "operation": "foo",
-    #             "serial": tx_num,
-    #             "version": 6,
-    #         } for tx_num in range(batch_size)
-    #     ]
-
     def simulate_send_batches(self):
         sending_batches_count = 0
         while sending_batches_count < 10:
@@ -196,7 +179,7 @@ class DynamicNetworkSimulation:
                 node_socket = self.network_nodes_state[random_node_address].socket
 
                 try:
-                    string_data = json.dumps(simulation_utils.generate_transactions(random.randint(200, 600)))
+                    string_data = json.dumps(simulations_utils.generate_transactions(random.randint(200, 600)))
                     response: requests.Response = requests.put(
                         url=f"{node_socket}/node/{self.simulation_config.APP_NAME}/batches",
                         data=string_data,
