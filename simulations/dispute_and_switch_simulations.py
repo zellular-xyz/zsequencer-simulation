@@ -155,7 +155,9 @@ class DisputeAndSwitchSimulation:
                 node_socket = self.network_nodes_state[random_node_address].socket
 
                 try:
-                    string_data = json.dumps(simulations_utils.generate_transactions(random.randint(200, 600)))
+                    batches_count = random.randint(200, 600)
+                    batch = simulations_utils.generate_transactions(batches_count)
+                    string_data = json.dumps(batch)
                     response: requests.Response = requests.put(
                         url=f"{node_socket}/node/{self.simulation_config.APP_NAME}/batches",
                         data=string_data,
@@ -166,7 +168,7 @@ class DisputeAndSwitchSimulation:
                 except RequestException as error:
                     self.logger.error(f"Error sending batch of transactions: {error}")
 
-            time.sleep(0.01)
+            time.sleep(0.1)
 
         self.logger.info('sending batches completed!')
 

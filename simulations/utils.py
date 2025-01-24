@@ -3,6 +3,8 @@ import os
 import secrets
 import shutil
 from typing import Dict, List, Type, Any
+import random
+import string
 
 from eigensdk.crypto.bls import attestation
 from pydantic import BaseModel
@@ -58,11 +60,15 @@ def launch_node(cmd, env_variables):
     run_command_on_terminal(cmd, env_variables)
 
 
+def generate_random_serial(k=20):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=k))
+
+
 def generate_transactions(batch_size: int) -> List[Dict]:
     return [
         {
             "operation": "foo",
-            "serial": tx_num,
+            "serial": generate_random_serial(),
             "version": 6,
-        } for tx_num in range(batch_size)
+        } for _ in range(batch_size)
     ]
