@@ -1,10 +1,11 @@
 """This script sets up and runs a simple app network for testing."""
 import os
+import random
 import secrets
 import shutil
-from typing import Dict, List, Type, Any
-import random
 import string
+from uuid import uuid4
+from typing import Dict, List, Any
 
 from eigensdk.crypto.bls import attestation
 from pydantic import BaseModel
@@ -60,15 +61,11 @@ def launch_node(cmd, env_variables):
     run_command_on_terminal(cmd, env_variables)
 
 
-def generate_random_serial(k=20):
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=k))
-
-
 def generate_transactions(batch_size: int) -> List[Dict]:
     return [
         {
             "operation": "foo",
-            "serial": generate_random_serial(),
+            "serial": str(uuid4()),
             "version": 6,
         } for _ in range(batch_size)
     ]

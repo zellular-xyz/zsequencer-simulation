@@ -1,4 +1,4 @@
-from examples.runner import main as runner_main
+from examples.network_runner import main as runner_main
 
 
 def simulate():

@@ -19,19 +19,6 @@ THREAD_NUMBERS_FOR_SENDING_TXS = 50
 zlogger = logging.getLogger(__name__)
 
 
-# def parse_args() -> argparse.Namespace:
-#     """Parse command-line arguments."""
-#     parser: argparse.ArgumentParser = argparse.ArgumentParser(
-#         description="Simulate a simple app using Zsequencer."
-#     )
-#     parser.add_argument(
-#         "--app_name", type=str, default="simple_app", help="Name of the application."
-#     )
-#     parser.add_argument(
-#         "--node_url", type=str, default="http://localhost:6003", help="URL of the node."
-#     )
-#     return parser.parse_args()
-
 
 def check_state(
         app_name: str, node_url: str, batch_number: int, batch_size: int

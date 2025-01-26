@@ -7,7 +7,7 @@ class SimulationConfig(BaseModel):
     NUM_INSTANCES: int = Field(3, description="Number of instances")
     HOST: str = Field("http://127.0.0.1", description="Host address")
     BASE_PORT: int = Field(6000, description="Base port number")
-    THRESHOLD_PERCENT: int = Field(40, description="Threshold percentage")
+    THRESHOLD_PERCENT: int = Field(42, description="Threshold percentage")
     DST_DIR: str = Field("/tmp/zellular_dev_net", description="Destination directory")
     APPS_FILE: str = Field("/tmp/zellular_dev_net/apps.json", description="Path to the apps file")
     HISTORICAL_NODES_REGISTRY_HOST: str = Field("localhost", description="Historical nodes registry host")

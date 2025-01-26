@@ -1,22 +1,16 @@
 """This script sets up and runs a simple app network for testing."""
 
-import argparse
 import json
 import os
-import platform
 import secrets
-import shlex
 import shutil
-import subprocess
 import time
-import random
-import string
-import config
-from enum import Enum
 from typing import Any
 
 from eigensdk.crypto.bls import attestation
 from web3 import Account
+import simulations.utils as simulations_utils
+import config
 
 NUM_INSTANCES: int = 3
 BASE_PORT: int = 6000
@@ -34,79 +28,6 @@ ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL = 30
 ZSEQUENCER_API_BATCHES_LIMIT = 100
 
 APP_NAME: str = "simple_app"
-
-
-class OSType(Enum):
-    MACOS = "macos"
-    LINUX = "linux"
-    UNKNOWN = "unknown"
-
-
-def get_os_type():
-    os_type = platform.system()
-    if os_type == "Darwin":
-        return OSType.MACOS
-    elif os_type == "Linux":
-        return OSType.LINUX
-    else:
-        return OSType.UNKNOWN
-
-
-current_os = get_os_type()
-
-
-def run_linux_command_on_terminal(command: str, env_variables):
-    launch_command: list[str] = ["gnome-terminal", "--tab", "--", "bash", "-c", command]
-    with subprocess.Popen(args=launch_command, env=env_variables) as process:
-        process.wait()
-
-
-def generate_random_string(length=5):
-    characters = string.ascii_letters + string.digits  # Combine letters and digits
-    random_string = ''.join(random.choices(characters, k=length))
-    return random_string
-
-
-def run_macos_command_on_terminal(command: str, env_variables: dict):
-    """
-    Opens a new Terminal window on macOS, sets environment variables, and runs a command.
-
-    Args:
-        command (str): The command to run in the Terminal.
-        env_variables (dict): A dictionary of environment variables to set.
-    """
-    env_string = " && ".join(f'export {key}={shlex.quote(value)}' for key, value in env_variables.items())
-    full_command = f"{env_string} && {command}"
-
-    cmd_temporary_file_path = os.path.join(config.TMP_DIR, f'{generate_random_string()}.sh')
-
-    # Write the command to a temporary bash file
-    with open(cmd_temporary_file_path, 'w') as bash_file:
-        bash_file.write("#!/bin/bash\n")
-        bash_file.write(full_command)
-
-    # Make the script executable
-    subprocess.run(['chmod', '+x', cmd_temporary_file_path])
-
-    # AppleScript to open Terminal and run the bash script
-    apple_script = f"""
-    tell application "Terminal"
-        do script "{cmd_temporary_file_path}"
-        activate
-    end tell
-    """
-
-    # Run the AppleScript
-    subprocess.run(["osascript", "-e", apple_script])
-
-
-def run_command_on_terminal(command: str, env_variables):
-    if current_os == OSType.LINUX:
-        run_linux_command_on_terminal(command, env_variables)
-    elif current_os == OSType.MACOS:
-        run_macos_command_on_terminal(command, env_variables)
-
-
 
 
 def generate_privates_and_nodes_info() -> tuple[list[str], dict[str, Any]]:
@@ -144,10 +65,10 @@ def run_command(
 
     command: str = f"python -u {command_name} {command_args}; echo; read -p 'Press enter to exit...'"
 
-    run_command_on_terminal(command, env_variables)
+    simulations_utils.launch_node(command, env_variables)
 
 
-def main() -> None:
+def network_runner() -> None:
     """Main function to run the setup and launch nodes and run the test."""
 
     bls_privates_list, ecdsa_privates_list, nodes_info_dict = generate_privates_and_nodes_info()
@@ -216,10 +137,7 @@ def main() -> None:
     time.sleep(5)
 
     test_script_fullpath = os.path.join(config.ROOT_DIR, 'examples', 'general_test.py')
-    run_command(command_name=test_script_fullpath,
-                command_args=f"--app_name {APP_NAME} --node_url http://localhost:{BASE_PORT + i + 1}",
-                env_variables=env_variables)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

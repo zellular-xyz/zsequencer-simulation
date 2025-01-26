@@ -1,11 +1,14 @@
 import json
 import os
 import random
+import re
 import shutil
 import socket
 import threading
 import time
 import logging
+from multiprocessing import Pool
+
 from typing import Dict, Tuple
 
 import requests
@@ -19,6 +22,14 @@ from historical_nodes_registry import (NodesRegistryClient,
                                        SnapShotType,
                                        run_registry_server)
 from simulations.config import SimulationConfig
+
+
+def extract_port(socket_str):
+    match = re.search(r":(\d+)(?:/|$)", socket_str)
+    if match:
+        return int(match.group(1))
+    else:
+        raise ValueError("No valid port found in the given string.")
 
 
 class DisputeAndSwitchSimulation:
@@ -109,27 +120,35 @@ class DisputeAndSwitchSimulation:
 
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
-        node_ids = list(set(initialized_network_snapshot.keys()) - {sequencer_address})
-        late_node_id, rest_node_ids = node_ids[0], node_ids[1:]
+        node_ids = set(initialized_network_snapshot.keys()) - {sequencer_address}
+
+        # print('\n' * 3, '  node_sockets  ', node_sockets, '\n' * 3)
+
+        late_node_id = max([
+            (node_id, extract_port(initialized_network_snapshot[node_id].socket))
+            for node_id in node_ids
+        ], key=lambda entry: entry[1])[0]
+
+        rest_node_ids = set(initialized_network_snapshot.keys()) - {sequencer_address, late_node_id}
+
+        simulations_utils.launch_node(*execution_cmds[sequencer_address])
+
+        time.sleep(7)
+
+        for node_id in rest_node_ids:
+            simulations_utils.launch_node(*execution_cmds[node_id])
 
         first_stage_nodes = [*rest_node_ids, sequencer_address]
-        print('late_node_id', late_node_id, 'first_stage_nodes', first_stage_nodes)
-
-        for node_id in first_stage_nodes:
-            (cmd, env_variables) = execution_cmds[node_id]
-            simulations_utils.launch_node(cmd, env_variables)
-
         first_stage_network_state = {node_id: initialized_network_snapshot[node_id]
                                      for node_id in first_stage_nodes}
         self.sequencer_address, self.network_nodes_state = sequencer_address, first_stage_network_state
 
-        time.sleep(600)
+        time.sleep(99999)
 
-        (cmd, env_variables) = execution_cmds[late_node_id]
-        simulations_utils.launch_node(cmd, env_variables)
+        simulations_utils.launch_node(*execution_cmds[late_node_id])
         self.network_nodes_state = initialized_network_snapshot
 
-    def init(self):
+    def transit_network_state(self):
         simulations_utils.delete_directory_contents(self.simulation_config.DST_DIR)
 
         if not os.path.exists(self.simulation_config.DST_DIR):
@@ -143,34 +162,6 @@ class DisputeAndSwitchSimulation:
             file.write(json.dumps({f"{self.simulation_config.APP_NAME}": {"url": "", "public_keys": []}}))
 
         self.initialize_network(3)
-
-    def simulate_send_batches(self):
-        time.sleep(15)
-
-        sending_batches_count = 0
-        while sending_batches_count < 100000:
-            if self.network_nodes_state and self.sequencer_address:
-                random_node_address = random.choice(
-                    list(set(list(self.network_nodes_state.keys())) - {self.sequencer_address}))
-                node_socket = self.network_nodes_state[random_node_address].socket
-
-                try:
-                    batches_count = random.randint(200, 600)
-                    batch = simulations_utils.generate_transactions(batches_count)
-                    string_data = json.dumps(batch)
-                    response: requests.Response = requests.put(
-                        url=f"{node_socket}/node/{self.simulation_config.APP_NAME}/batches",
-                        data=string_data,
-                        headers={"Content-Type": "application/json"},
-                    )
-                    response.raise_for_status()
-                    sending_batches_count += 1
-                except RequestException as error:
-                    self.logger.error(f"Error sending batch of transactions: {error}")
-
-            time.sleep(0.1)
-
-        self.logger.info('sending batches completed!')
 
     def run(self):
         self.nodes_registry_thread = threading.Thread(
@@ -187,15 +178,10 @@ class DisputeAndSwitchSimulation:
             return
         self.logger.info("Historical Nodes Registry server is running. Press Ctrl+C to stop.")
 
-        self.network_state_handler_thread = threading.Thread(target=self.init)
-        self.send_batches_thread = threading.Thread(target=self.simulate_send_batches)
+        self.network_state_handler_thread = threading.Thread(target=self.transit_network_state)
 
-        self.send_batches_thread.start()
         self.network_state_handler_thread.start()
-
-        self.send_batches_thread.join()
         self.network_state_handler_thread.join()
-
         self.shutdown_event.wait()
 
 
