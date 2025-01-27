@@ -1,19 +1,15 @@
+import asyncio
 import json
+import logging
 import os
-import random
 import re
 import shutil
 import socket
 import threading
 import time
-import logging
-from multiprocessing import Pool
-
 from typing import Dict, Tuple
 
-import requests
 from eigensdk.crypto.bls import attestation
-from requests.exceptions import RequestException
 from web3 import Account
 
 import simulations.utils as simulations_utils
@@ -21,7 +17,9 @@ from historical_nodes_registry import (NodesRegistryClient,
                                        NodeInfo,
                                        SnapShotType,
                                        run_registry_server)
+from simulations.concurrent_batch_sender import BatchSender
 from simulations.config import SimulationConfig
+from simulations.file_logger import FileLogger
 
 
 def extract_port(socket_str):
@@ -34,17 +32,23 @@ def extract_port(socket_str):
 
 class DisputeAndSwitchSimulation:
 
-    def __init__(self, simulation_config: SimulationConfig,
-                 logger):
+    def __init__(self, simulation_config: SimulationConfig, logger):
         self.simulation_config = simulation_config
         self.nodes_registry_thread = None
         self.send_batches_thread = None
         self.network_state_handler_thread = None
+        self.send_transactions_thread = None
         self.sequencer_address = None
         self.network_nodes_state = None
         self.shutdown_event = threading.Event()
         self.nodes_registry_client = NodesRegistryClient(socket=self.simulation_config.HISTORICAL_NODES_REGISTRY_SOCKET)
         self.logger = logger
+
+        # Initialize BatchSender here
+        file_logger = FileLogger(file_path=os.path.join(simulation_config.LOGS_DIRECTORY, "simulations.log"),
+                                 flush_interval=0.1)
+        self.batch_sender = BatchSender(logger=file_logger,
+                                        app_name=self.simulation_config.APP_NAME)
 
     def generate_node_info(self, node_idx: int, keys: simulations_utils.Keys) -> NodeInfo:
         address = Account().from_key(keys.ecdsa_private_key).address.lower()
@@ -54,10 +58,8 @@ class DisputeAndSwitchSimulation:
                         socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.BASE_PORT + node_idx)}",
                         stake=10)
 
-    def prepare_node(self,
-                     node_idx: int,
-                     keys: simulations_utils.Keys,
-                     sequencer_initial_address: str) -> Tuple[str, Dict]:
+    def prepare_node(self, node_idx: int, keys: simulations_utils.Keys, sequencer_initial_address: str) -> Tuple[
+        str, Dict]:
         DST_DIR = self.simulation_config.DST_DIR
         data_dir: str = f"{DST_DIR}/db_{node_idx}"
         if os.path.exists(data_dir):
@@ -83,8 +85,7 @@ class DisputeAndSwitchSimulation:
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
             "ZSEQUENCER_VERSION": "v0.0.13",
             "ZSEQUENCER_NODES_FILE": "",
-            **self.simulation_config.to_dict(node_idx=node_idx,
-                                             sequencer_initial_address=sequencer_initial_address)
+            **self.simulation_config.to_dict(node_idx=node_idx, sequencer_initial_address=sequencer_initial_address)
         }
 
         return simulations_utils.generate_node_execution_command(node_idx), env_variables
@@ -114,15 +115,12 @@ class DisputeAndSwitchSimulation:
                 sequencer_address = node_info.id
 
             initialized_network_snapshot[node_info.id] = node_info
-            execution_cmds[node_info.id] = self.prepare_node(node_idx=node_idx,
-                                                             keys=keys,
+            execution_cmds[node_info.id] = self.prepare_node(node_idx=node_idx, keys=keys,
                                                              sequencer_initial_address=sequencer_address)
 
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
         node_ids = set(initialized_network_snapshot.keys()) - {sequencer_address}
-
-        # print('\n' * 3, '  node_sockets  ', node_sockets, '\n' * 3)
 
         late_node_id = max([
             (node_id, extract_port(initialized_network_snapshot[node_id].socket))
@@ -143,7 +141,7 @@ class DisputeAndSwitchSimulation:
                                      for node_id in first_stage_nodes}
         self.sequencer_address, self.network_nodes_state = sequencer_address, first_stage_network_state
 
-        time.sleep(99999)
+        time.sleep(9999999)
 
         simulations_utils.launch_node(*execution_cmds[late_node_id])
         self.network_nodes_state = initialized_network_snapshot
@@ -163,6 +161,11 @@ class DisputeAndSwitchSimulation:
 
         self.initialize_network(3)
 
+    def send_batches(self):
+        time.sleep(16)
+        self.batch_sender.set_node_sockets(node_sockets=['http://localhost:6001'])
+        asyncio.run(self.batch_sender.send_batches_concurrently())
+
     def run(self):
         self.nodes_registry_thread = threading.Thread(
             target=run_registry_server,
@@ -176,11 +179,17 @@ class DisputeAndSwitchSimulation:
         except TimeoutError as e:
             self.logger.error(f"Error: {e}")
             return
+
         self.logger.info("Historical Nodes Registry server is running. Press Ctrl+C to stop.")
 
         self.network_state_handler_thread = threading.Thread(target=self.transit_network_state)
 
+        # Create a thread for sending batches
+        self.send_batches_thread = threading.Thread(target=self.send_batches, daemon=True)
+
         self.network_state_handler_thread.start()
+        self.send_batches_thread.start()
+
         self.network_state_handler_thread.join()
         self.shutdown_event.wait()
 

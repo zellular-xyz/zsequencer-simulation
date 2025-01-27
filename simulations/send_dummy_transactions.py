@@ -33,7 +33,7 @@ async def send_batch(session: ClientSession):
 
 
 async def send_batches_concurrently():
-    requests_per_second = 100
+    requests_per_second = 1000
 
     async with aiohttp.ClientSession() as session:
         while True:

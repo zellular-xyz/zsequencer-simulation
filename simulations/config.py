@@ -31,6 +31,7 @@ class SimulationConfig(BaseModel):
     APP_NAME: str = Field("simple_app", description="Name of the application")
     TIMESERIES_NODES_COUNT: List[int] = Field([3, 4, 6],
                                               description="count of nodes available on network at different states")
+    LOGS_DIRECTORY: str = Field("/tmp/zellular-simulation-logs", description="Directory to store logs")
 
     class Config:
         validate_assignment = True
