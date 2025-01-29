@@ -23,7 +23,7 @@ class SimulationConfig(BaseModel):
     ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
     ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL: int = Field(60, description="Interval to fetch apps and nodes")
-    ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100, description="API batches limit for ZSequencer")
+    ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100000, description="API batches limit for ZSequencer")
     ZSEQUENCER_NODES_SOURCES: List[str] = Field(
         ["file", "historical_nodes_registry", "eigenlayer"],
         description="Sources for nodes in ZSequencer",

@@ -45,8 +45,7 @@ class DisputeAndSwitchSimulation:
         self.logger = logger
 
         # Initialize BatchSender here
-        file_logger = FileLogger(file_path=os.path.join(simulation_config.LOGS_DIRECTORY, "simulations.log"),
-                                 flush_interval=0.1)
+        file_logger = FileLogger(file_path=os.path.join(simulation_config.LOGS_DIRECTORY, "simulations.log"))
         self.batch_sender = BatchSender(logger=file_logger,
                                         app_name=self.simulation_config.APP_NAME)
 
@@ -163,8 +162,11 @@ class DisputeAndSwitchSimulation:
 
     def send_batches(self):
         time.sleep(16)
-        self.batch_sender.set_node_sockets(node_sockets=['http://localhost:6001'])
+
+        node_sockets = ['http://localhost:6001']
+        self.batch_sender.set_node_sockets(node_sockets=node_sockets)
         asyncio.run(self.batch_sender.send_batches_concurrently())
+
 
     def run(self):
         self.nodes_registry_thread = threading.Thread(

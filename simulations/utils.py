@@ -44,7 +44,7 @@ def generate_node_execution_command(node_idx: int) -> str:
 
 def delete_directory_contents(directory):
     if not os.path.exists(directory):
-        raise FileNotFoundError(f"Directory '{directory}' does not exist.")
+        return
 
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)

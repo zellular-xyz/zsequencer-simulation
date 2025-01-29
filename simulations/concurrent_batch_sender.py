@@ -7,12 +7,10 @@ import aiohttp
 
 
 class BatchSender:
-    def __init__(self, logger, app_name):
-        """
-        Initializes the BatchSender.
+    REQUESTS_PER_SECOND = 700
+    BATCH_SIZE = 3
 
-        :param logger: Logger for general logs.
-        """
+    def __init__(self, logger, app_name):
         self.app_name = app_name
         self._node_sockets = None
         self.logger = logger
@@ -22,13 +20,9 @@ class BatchSender:
         self._node_sockets = node_sockets
 
     async def send_batch_to_node(self, session: aiohttp.ClientSession, node_url: str):
-        """
-        Sends a single batch of transactions to a specific node using aiohttp.
-        """
-
         try:
             t = int(time.time())
-            batch = [{"tx_id": str(uuid4()), "operation": "foo", "t": t} for _ in range(20)]
+            batch = [{"tx_id": str(uuid4()), "operation": "foo", "t": t} for _ in range(self.BATCH_SIZE)]
             string_data = json.dumps(batch)
 
             async with session.put(
@@ -43,40 +37,24 @@ class BatchSender:
         except Exception as error:
             print(f"Error sending batch to {node_url}: {error}")
 
-    async def send_batch(self, session: aiohttp.ClientSession):
-        """
-        Sends a single batch to all nodes in the node_sockets list.
-        """
-        tasks = [
-            self.send_batch_to_node(session, node_url)
-            for node_url in self._node_sockets
-        ]
-        await asyncio.gather(*tasks)
-
     async def send_batches_concurrently(self):
-        """
-        Continuously sends batches of transactions concurrently
-        to all nodes and logs the time gap for each round.
-        """
-        requests_per_second = 1000
-
         async with aiohttp.ClientSession() as session:
             while not self.shutdown_event.is_set():
-                start_time = time.time()
+                start_time = time.perf_counter()  # High-resolution timer to start timing
 
-                # Create tasks for this round
+                # Create tasks for sending batches to all nodes
                 tasks = [
-                    self.send_batch(session)
-                    for _ in range(requests_per_second)
+                    self.send_batch_to_node(session, node_url)
+                    for node_url in self._node_sockets
                 ]
 
                 # Run all tasks concurrently
                 await asyncio.gather(*tasks)
 
-                # Calculate the gap time
-                end_time = time.time()
-                gap_time = end_time - start_time
-                self.logger.log(f"Round completed. Time gap: {gap_time:.2f} seconds")
+                end_time = time.perf_counter()  # End time
+                gap_time_ns = (end_time - start_time) * 1_000_000_000  # Convert to nanoseconds
+                self.logger.log(f"Round completed. Time gap: {gap_time_ns:.0f} ns")
 
-                # Pause for the next round
-                await asyncio.sleep(1)
+                # Calculate the wait time based on the rate limit
+                time_to_wait = max(0, (1 / self.REQUESTS_PER_SECOND) - (end_time - start_time))
+                await asyncio.sleep(time_to_wait)
