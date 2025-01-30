@@ -25,12 +25,16 @@ class BatchSender:
             batch = [{"tx_id": str(uuid4()), "operation": "foo", "t": t} for _ in range(self.BATCH_SIZE)]
             string_data = json.dumps(batch)
 
+            start_time = time.perf_counter()
             async with session.put(
                     url=f"{node_url}/node/{self.app_name}/batches",
                     data=string_data,
                     headers={"Content-Type": "application/json"}
             ) as response:
                 if response.status == 200:
+                    end_time = time.perf_counter()
+                    execution_time_ns = (end_time - start_time) * 1_000_000_000
+                    self.logger.log(f"Execution time of client: {execution_time_ns:.0f} ns")
                     print(f"Batch sent successfully to {node_url} at {time.ctime()}")
                 else:
                     print(f"Failed to send batch to {node_url} with status code {response.status}")
@@ -51,10 +55,7 @@ class BatchSender:
                 # Run all tasks concurrently
                 await asyncio.gather(*tasks)
 
-                end_time = time.perf_counter()  # End time
-                gap_time_ns = (end_time - start_time) * 1_000_000_000  # Convert to nanoseconds
-                self.logger.log(f"Round completed. Time gap: {gap_time_ns:.0f} ns")
+                end_time = time.perf_counter()
 
-                # Calculate the wait time based on the rate limit
                 time_to_wait = max(0, (1 / self.REQUESTS_PER_SECOND) - (end_time - start_time))
                 await asyncio.sleep(time_to_wait)
