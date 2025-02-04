@@ -7,7 +7,7 @@ import aiohttp
 
 
 class BatchSender:
-    REQUESTS_PER_SECOND = 2000
+    REQUESTS_PER_SECOND = 150
     BATCH_SIZE = 3
 
     def __init__(self, logger, app_name):
