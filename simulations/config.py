@@ -7,6 +7,7 @@ class SimulationConfig(BaseModel):
     NUM_INSTANCES: int = Field(3, description="Number of instances")
     HOST: str = Field("http://127.0.0.1", description="Host address")
     BASE_PORT: int = Field(6000, description="Base port number")
+    PROXY_BASE_PORT: int = Field(7000, description="Base proxy port number")
     THRESHOLD_PERCENT: int = Field(42, description="Threshold percentage")
     DST_DIR: str = Field("/tmp/zellular_dev_net", description="Destination directory")
     APPS_FILE: str = Field("/tmp/zellular_dev_net/apps.json", description="Path to the apps file")
@@ -46,6 +47,7 @@ class SimulationConfig(BaseModel):
         return {
             "ZSEQUENCER_APPS_FILE": self.APPS_FILE,
             "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": self.HISTORICAL_NODES_REGISTRY_SOCKET,
+            "ZSEQUENCER_HOST": "localhost",
             "ZSEQUENCER_PORT": str(self.BASE_PORT + node_idx),
             "ZSEQUENCER_SNAPSHOT_CHUNK": str(self.ZSEQUENCER_SNAPSHOT_CHUNK),
             "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(self.ZSEQUENCER_REMOVE_CHUNK_BORDER),
@@ -57,5 +59,9 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(self.ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL),
             "ZSEQUENCER_API_BATCHES_LIMIT": str(self.ZSEQUENCER_API_BATCHES_LIMIT),
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
-            "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1]
+            "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1],
+            # Proxy config
+            "PROXY_HOST": "localhost",
+            "PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
+            "PROXY_FLUSH_THRESHOLD_VOLUME": str(2000)
         }

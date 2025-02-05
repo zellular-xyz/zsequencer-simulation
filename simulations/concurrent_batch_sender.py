@@ -7,7 +7,7 @@ import aiohttp
 
 
 class BatchSender:
-    REQUESTS_PER_SECOND = 700
+    REQUESTS_PER_SECOND = 150
     BATCH_SIZE = 3
 
     def __init__(self, logger, app_name):
@@ -44,12 +44,12 @@ class BatchSender:
     async def send_batches_concurrently(self):
         async with aiohttp.ClientSession() as session:
             while not self.shutdown_event.is_set():
-                start_time = time.perf_counter()  # High-resolution timer to start timing
+                start_time = time.perf_counter()
 
-                # Create tasks for sending batches to all nodes
                 tasks = [
                     self.send_batch_to_node(session, node_url)
                     for node_url in self._node_sockets
+                    for _ in range(self.REQUESTS_PER_SECOND)
                 ]
 
                 # Run all tasks concurrently
@@ -57,5 +57,5 @@ class BatchSender:
 
                 end_time = time.perf_counter()
 
-                time_to_wait = max(0, (1 / self.REQUESTS_PER_SECOND) - (end_time - start_time))
+                time_to_wait = max(0, 1 - (end_time - start_time))
                 await asyncio.sleep(time_to_wait)

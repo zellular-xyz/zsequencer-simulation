@@ -42,6 +42,18 @@ def generate_node_execution_command(node_idx: int) -> str:
     return f"source {virtual_env_path}; python -u {node_runner_path} {str(node_idx)}; echo; read -p 'Press enter to exit...'"
 
 
+def generate_node_proxy_execution_command() -> str:
+    """Run a command in a new terminal tab."""
+    script_dir: str = os.path.dirname(os.path.abspath(__file__))
+    parent_dir: str = os.path.dirname(script_dir)
+    os.chdir(parent_dir)
+
+    virtual_env_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, config.ZSEQUENCER_PROJECT_VIRTUAL_ENV)
+    proxy_runner_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, 'run_batch_aggregator_server.py')
+
+    return f"source {virtual_env_path}; python {proxy_runner_path}"
+
+
 def delete_directory_contents(directory):
     if not os.path.exists(directory):
         return
@@ -59,6 +71,11 @@ def delete_directory_contents(directory):
 
 def launch_node(cmd, env_variables):
     run_command_on_terminal(cmd, env_variables)
+
+
+def bootstrap_node(node_execution_cmd, proxy_execution_cmd, env_variables):
+    run_command_on_terminal(node_execution_cmd, env_variables)
+    run_command_on_terminal(proxy_execution_cmd, env_variables)
 
 
 def generate_transactions(batch_size: int) -> List[Dict]:

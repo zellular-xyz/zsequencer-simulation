@@ -55,7 +55,7 @@ class DynamicNetworkSimulation:
     def prepare_node(self,
                      node_idx: int,
                      keys: simulations_utils.Keys,
-                     sequencer_initial_address: str) -> Tuple[str, Dict]:
+                     sequencer_initial_address: str) -> Dict[str, str]:
 
         DST_DIR = self.simulation_config.DST_DIR
         data_dir: str = f"{DST_DIR}/db_{node_idx}"
@@ -86,7 +86,11 @@ class DynamicNetworkSimulation:
                                              sequencer_initial_address=sequencer_initial_address)
         }
 
-        return simulations_utils.generate_node_execution_command(node_idx), env_variables
+        return {
+            'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
+            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(),
+            'env_variables': env_variables
+        }
 
     def wait_nodes_registry_server(self, timeout: float = 20.0, interval: float = 0.5):
         start_time = time.time()
@@ -119,8 +123,13 @@ class DynamicNetworkSimulation:
 
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
-        for node_address, (cmd, env_variables) in execution_cmds.items():
-            simulations_utils.launch_node(cmd, env_variables)
+        for node_address, execution_dict in execution_cmds.items():
+            node_execution_cmd, proxy_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
+                                                                      execution_dict['proxy_execution_cmd'],
+                                                                      execution_dict['env_variables'])
+
+            simulations_utils.launch_node(node_execution_cmd, env_variables)
+            simulations_utils.launch_node(proxy_execution_cmd, env_variables)
 
         self.sequencer_address, self.network_nodes_state = sequencer_address, initialized_network_snapshot
 
@@ -142,8 +151,13 @@ class DynamicNetworkSimulation:
                                                                  sequencer_initial_address=self.sequencer_address)
 
             self.nodes_registry_client.add_snapshot(next_network_state)
-            for node_address, (cmd, env_variables) in new_nodes_cmds.items():
-                simulations_utils.launch_node(cmd, env_variables)
+            for node_address, execution_dict in new_nodes_cmds.items():
+                node_execution_cmd, proxy_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
+                                                                          execution_dict['proxy_execution_cmd'],
+                                                                          execution_dict['env_variables'])
+
+                simulations_utils.launch_node(node_execution_cmd, env_variables)
+                simulations_utils.launch_node(proxy_execution_cmd, env_variables)
 
         self.network_nodes_state = next_network_state
         self.nodes_registry_client.add_snapshot(self.network_nodes_state)
