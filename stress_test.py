@@ -22,9 +22,9 @@ async def send_batch(session, semaphore):
     """Send a batch (POST request) to the server with form data."""
     async with semaphore:
         batch_data = {"batch": generate_random_string(10)}  # Random 10-char string
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Content-Type": "application/json"}
 
-        async with session.post(URL, data=batch_data, headers=headers) as response:
+        async with session.post(URL, json=batch_data, headers=headers) as response:
             return await response.text()
 
 
