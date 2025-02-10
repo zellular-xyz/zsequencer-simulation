@@ -5,7 +5,7 @@ import time
 import aiohttp
 
 # Number of requests and concurrency level
-TOTAL_REQUESTS = 100_000
+TOTAL_REQUESTS = 1_000_000
 CONCURRENT_REQUESTS = 100
 
 # Target URL with dynamic app_name
