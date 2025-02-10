@@ -61,7 +61,8 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
             "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1],
             # Proxy config
-            "PROXY_HOST": "localhost",
-            "PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
-            "PROXY_FLUSH_THRESHOLD_VOLUME": str(2000)
+            "ZSEQUENCER_PROXY_HOST": "localhost",
+            "ZSEQUENCER_PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
+            "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
+            "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1"
         }
