@@ -5,7 +5,7 @@ import random
 import string
 
 # Configuration
-URL = "http://0.0.0.0:7001/put_batch"
+URL = "http://0.0.0.0:7001/node/simple_app/batches"
 NUM_REQUESTS = 1_000  # Total requests
 CONCURRENT_REQUESTS = 10  # Concurrent requests per process
 NUM_PROCESSES = multiprocessing.cpu_count()  # Use all available CPU cores
@@ -20,7 +20,7 @@ async def send_request(session, batch):
     """Send an async HTTP POST request with batch data."""
     data = {"batch": batch}
     try:
-        async with session.post(URL, data=data) as response:
+        async with session.put(URL, data=data) as response:
             return response.status
     except aiohttp.ClientError as e:
         print(f"Request failed: {e}")
