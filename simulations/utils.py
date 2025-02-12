@@ -42,16 +42,16 @@ def generate_node_execution_command(node_idx: int) -> str:
     return f"source {virtual_env_path}; python -u {node_runner_path} {str(node_idx)}; echo; read -p 'Press enter to exit...'"
 
 
-def generate_node_proxy_execution_command() -> str:
+def generate_node_proxy_execution_command(port, workers) -> str:
     """Run a command in a new terminal tab."""
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     parent_dir: str = os.path.dirname(script_dir)
     os.chdir(parent_dir)
 
-    virtual_env_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, config.ZSEQUENCER_PROJECT_VIRTUAL_ENV)
-    proxy_runner_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, 'run_batch_aggregator_server.py')
+    proxy_runner_path = 'proxy.proxy_server'
+    server_app = 'app'
 
-    return f"source {virtual_env_path}; python {proxy_runner_path}"
+    return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && uvicorn {proxy_runner_path}:{server_app} --host 0.0.0.0 --port {port} --workers {workers}"
 
 
 def delete_directory_contents(directory):

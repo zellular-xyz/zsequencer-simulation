@@ -82,7 +82,10 @@ class DisputeAndSwitchSimulation:
 
         return {
             'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
-            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(),
+            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(
+                port=env_variables["ZSEQUENCER_PROXY_PORT"],
+                workers=4
+            ),
             'env_variables': env_variables
         }
 
