@@ -48,9 +48,7 @@ def generate_node_proxy_execution_command(port, workers) -> str:
     parent_dir: str = os.path.dirname(script_dir)
     os.chdir(parent_dir)
 
-    proxy_runner_path = 'proxy_server'
-    server_app = 'app'
-    return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && uvicorn --app-dir proxy {proxy_runner_path}:{server_app} --host 0.0.0.0 --port {port} --workers {workers}"
+    return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && python proxy/proxy_server.py"
 
 
 def delete_directory_contents(directory):
