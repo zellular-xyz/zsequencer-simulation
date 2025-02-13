@@ -48,7 +48,10 @@ def generate_node_proxy_execution_command(port, workers) -> str:
     parent_dir: str = os.path.dirname(script_dir)
     os.chdir(parent_dir)
 
-    return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && python proxy/proxy_server.py"
+    proxy_runner_path = 'proxy_server'
+    server_app = 'app'
+
+    return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && uvicorn --app-dir proxy {proxy_runner_path}:{server_app} --host 0.0.0.0 --port {port} --workers {workers}"
 
 
 def delete_directory_contents(directory):
@@ -70,9 +73,10 @@ def launch_node(cmd, env_variables):
     run_command_on_terminal(cmd, env_variables)
 
 
-def bootstrap_node(node_execution_cmd, proxy_execution_cmd, env_variables):
+def bootstrap_node(env_variables, node_execution_cmd, proxy_execution_cmd=None):
     run_command_on_terminal(node_execution_cmd, env_variables)
-    run_command_on_terminal(proxy_execution_cmd, env_variables)
+    if proxy_execution_cmd is not None:
+        run_command_on_terminal(proxy_execution_cmd, env_variables)
 
 
 def generate_transactions(batch_size: int) -> List[Dict]:
