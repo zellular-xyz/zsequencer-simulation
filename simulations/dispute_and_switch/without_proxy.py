@@ -45,7 +45,7 @@ class DisputeAndSwitchSimulation:
         return NodeInfo(id=address,
                         public_key_g2=keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
                         address=address,
-                        socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.PROXY_BASE_PORT + node_idx)}",
+                        socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.BASE_PORT + node_idx)}",
                         stake=10)
 
     def prepare_node(self,
@@ -82,10 +82,6 @@ class DisputeAndSwitchSimulation:
 
         return {
             'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
-            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(
-                port=env_variables["ZSEQUENCER_PROXY_PORT"],
-                workers=4
-            ),
             'env_variables': env_variables
         }
 
@@ -183,6 +179,6 @@ class DisputeAndSwitchSimulation:
         self.shutdown_event.wait()
 
 
-def simulate_dispute_and_switch():
+def simulate_dispute_and_switch_without_proxy():
     DisputeAndSwitchSimulation(simulation_config=SimulationConfig(),
                                logger=logging.getLogger(__name__)).run()
