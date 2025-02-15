@@ -59,7 +59,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(self.ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL),
             "ZSEQUENCER_API_BATCHES_LIMIT": str(self.ZSEQUENCER_API_BATCHES_LIMIT),
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
-            "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1],
+            "ZSEQUENCER_NODE_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1],
             # Proxy config
             "ZSEQUENCER_PROXY_HOST": "localhost",
             "ZSEQUENCER_PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
