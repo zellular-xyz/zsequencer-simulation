@@ -19,7 +19,7 @@ class SimulationConfig(BaseModel):
     )
     ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(1000, description="Snapshot chunk size for ZSequencer")
     ZSEQUENCER_REMOVE_CHUNK_BORDER: int = Field(3, description="Chunk border for ZSequencer removal")
-    ZSEQUENCER_SEND_TXS_INTERVAL: float = Field(0.05, description="Interval for sending transactions in ZSequencer")
+    ZSEQUENCER_SEND_BATCH_INTERVAL: float = Field(0.05, description="Interval for sending transactions in ZSequencer")
     ZSEQUENCER_SYNC_INTERVAL: float = Field(0.05, description="Sync interval for ZSequencer")
     ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
@@ -52,7 +52,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_SNAPSHOT_CHUNK": str(self.ZSEQUENCER_SNAPSHOT_CHUNK),
             "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(self.ZSEQUENCER_REMOVE_CHUNK_BORDER),
             "ZSEQUENCER_THRESHOLD_PERCENT": str(self.THRESHOLD_PERCENT),
-            "ZSEQUENCER_SEND_TXS_INTERVAL": str(self.ZSEQUENCER_SEND_TXS_INTERVAL),
+            "ZSEQUENCER_SEND_BATCH_INTERVAL": str(self.ZSEQUENCER_SEND_BATCH_INTERVAL),
             "ZSEQUENCER_SYNC_INTERVAL": str(self.ZSEQUENCER_SYNC_INTERVAL),
             "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(self.ZSEQUENCER_FINALIZATION_TIME_BORDER),
             "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(self.ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT),
