@@ -1,59 +1,54 @@
 import asyncio
-import aiohttp
-import multiprocessing
 import random
 import string
+import time
+import aiohttp
 
-# Configuration
-URL = "http://0.0.0.0:7001/node/simple_app/batches"
-NUM_REQUESTS = 1_000  # Total requests
-CONCURRENT_REQUESTS = 10  # Concurrent requests per process
-NUM_PROCESSES = multiprocessing.cpu_count()  # Use all available CPU cores
+# Number of requests and concurrency level
+TOTAL_REQUESTS = 10_000
+CONCURRENT_REQUESTS = 100
+
+# Target URL with dynamic app_name
+URL = f"http://0.0.0.0:7001/node/simple_app/batches"
 
 
-def generate_random_string(length=7):
+def generate_random_string(length=10):
     """Generate a random alphanumeric string of given length."""
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
-async def send_request(session, batch):
-    """Send an async HTTP POST request with batch data."""
-    data = {"batch": batch}
-    try:
-        async with session.put(URL, data=data) as response:
-            return response.status
-    except aiohttp.ClientError as e:
-        print(f"Request failed: {e}")
-        return None
+async def send_batch(session, semaphore):
+    """Send a batch (POST request) to the server with form data."""
+    async with semaphore:
+        batch_data = {"batch": generate_random_string(10)}  # Random 10-char string
+        headers = {"Content-Type": "application/json"}
+
+        async with session.put(URL, json=batch_data, headers=headers) as response:
+            return await response.text()
 
 
-async def run_load_test(requests_per_process):
-    """Run the load test using asyncio with a given number of requests."""
+async def worker(semaphore, session, results):
+    """Worker that sends requests while respecting concurrency limits."""
+    response = await send_batch(session, semaphore)
+    results.append(response)
+
+
+async def stress_test():
+    """Main function to send requests concurrently."""
+    semaphore = asyncio.Semaphore(CONCURRENT_REQUESTS)  # Limit concurrency
+    results = []
+
     async with aiohttp.ClientSession() as session:
-        tasks = [send_request(session, generate_random_string()) for _ in range(requests_per_process)]
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-        success_count = sum(1 for r in responses if r == 200)
-        print(
-            f"Process {multiprocessing.current_process().name}: {success_count}/{requests_per_process} successful requests.")
+        tasks = [worker(semaphore, session, results) for _ in range(TOTAL_REQUESTS)]
+
+        start_time = time.time()
+        await asyncio.gather(*tasks)
+        end_time = time.time()
+
+    print(f"Completed {len(results)} requests in {end_time - start_time:.2f} seconds")
+    print(f"Requests per second: {len(results) / (end_time - start_time):.2f}")
 
 
-def start_process(requests_per_process):
-    """Start an independent process to run the async load test."""
-    asyncio.run(run_load_test(requests_per_process))
-
-
-def main():
-    """Distribute requests across multiple processes."""
-    requests_per_process = NUM_REQUESTS // NUM_PROCESSES
-    processes = [multiprocessing.Process(target=start_process, args=(requests_per_process,)) for _ in
-                 range(NUM_PROCESSES)]
-
-    for p in processes:
-        p.start()
-
-    for p in processes:
-        p.join()
-
-
+# Run the stress test
 if __name__ == "__main__":
-    main()
+    asyncio.run(stress_test())
