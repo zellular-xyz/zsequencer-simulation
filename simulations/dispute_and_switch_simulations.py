@@ -45,7 +45,7 @@ class DisputeAndSwitchSimulation:
         return NodeInfo(id=address,
                         public_key_g2=keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
                         address=address,
-                        socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.PROXY_BASE_PORT + node_idx)}",
+                        socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.BASE_PORT + node_idx)}",
                         stake=10)
 
     def prepare_node(self,
