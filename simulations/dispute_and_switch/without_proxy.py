@@ -115,31 +115,8 @@ class DisputeAndSwitchSimulation:
 
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
-        node_ids = set(initialized_network_snapshot.keys()) - {sequencer_address}
-
-        late_node_id = max([
-            (node_id, extract_port(initialized_network_snapshot[node_id].socket))
-            for node_id in node_ids
-        ], key=lambda entry: entry[1])[0]
-
-        rest_node_ids = set(initialized_network_snapshot.keys()) - {sequencer_address, late_node_id}
-
-        simulations_utils.bootstrap_node(**execution_cmds[sequencer_address])
-
-        time.sleep(7)
-
-        for node_id in rest_node_ids:
+        for node_id in initialized_network_snapshot:
             simulations_utils.bootstrap_node(**execution_cmds[node_id])
-
-        first_stage_nodes = [*rest_node_ids, sequencer_address]
-        first_stage_network_state = {node_id: initialized_network_snapshot[node_id]
-                                     for node_id in first_stage_nodes}
-        self.sequencer_address, self.network_nodes_state = sequencer_address, first_stage_network_state
-
-        time.sleep(9999999)
-
-        simulations_utils.bootstrap_node(**execution_cmds[late_node_id])
-        self.network_nodes_state = initialized_network_snapshot
 
     def transit_network_state(self):
         simulations_utils.delete_directory_contents(self.simulation_config.DST_DIR)
