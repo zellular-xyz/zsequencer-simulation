@@ -159,3 +159,7 @@ class DisputeAndSwitchSimulation:
 def simulate_dispute_and_switch_without_proxy():
     DisputeAndSwitchSimulation(simulation_config=SimulationConfig(),
                                logger=logging.getLogger(__name__)).run()
+
+
+if __name__ == "__main__":
+    simulate_dispute_and_switch_without_proxy()

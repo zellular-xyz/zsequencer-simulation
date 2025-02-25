@@ -17,7 +17,7 @@ class SimulationConfig(BaseModel):
         None,
         description="Socket for historical nodes registry",
     )
-    ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(1000, description="Snapshot chunk size for ZSequencer")
+    ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(10, description="Snapshot chunk size for ZSequencer")
     ZSEQUENCER_REMOVE_CHUNK_BORDER: int = Field(3, description="Chunk border for ZSequencer removal")
     ZSEQUENCER_SEND_BATCH_INTERVAL: float = Field(0.05, description="Interval for sending transactions in ZSequencer")
     ZSEQUENCER_SYNC_INTERVAL: float = Field(0.05, description="Sync interval for ZSequencer")
@@ -25,7 +25,7 @@ class SimulationConfig(BaseModel):
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
     ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL: int = Field(60, description="Interval to fetch apps and nodes")
     ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100000, description="API batches limit for ZSequencer")
-    ZSEQUENCER_NODES_SOURCES: List[str] = Field(
+    ZSEQUENCER_NODES_SOURCE: List[str] = Field(
         ["file", "historical_nodes_registry", "eigenlayer"],
         description="Sources for nodes in ZSequencer",
     )
@@ -59,7 +59,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(self.ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL),
             "ZSEQUENCER_API_BATCHES_LIMIT": str(self.ZSEQUENCER_API_BATCHES_LIMIT),
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
-            "ZSEQUENCER_NODE_SOURCE": self.ZSEQUENCER_NODES_SOURCES[1],
+            "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCE[1],
             # Proxy config
             "ZSEQUENCER_PROXY_HOST": "localhost",
             "ZSEQUENCER_PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
