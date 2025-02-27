@@ -75,7 +75,6 @@ class DisputeAndSwitchSimulation:
             "ZSEQUENCER_ECDSA_KEY_PASSWORD": ecdsa_passwd,
             "ZSEQUENCER_SNAPSHOT_PATH": data_dir,
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.13",
             "ZSEQUENCER_NODES_FILE": "",
             **self.simulation_config.to_dict(node_idx=node_idx, sequencer_initial_address=sequencer_initial_address)
         }
