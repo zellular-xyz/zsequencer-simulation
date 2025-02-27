@@ -80,7 +80,7 @@ class DynamicNetworkSimulation:
             "ZSEQUENCER_ECDSA_KEY_PASSWORD": ecdsa_passwd,
             "ZSEQUENCER_SNAPSHOT_PATH": data_dir,
             "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.13",
+            "ZSEQUENCER_VERSION": "v0.0.14",
             "ZSEQUENCER_NODES_FILE": "",
             **self.simulation_config.to_dict(node_idx=node_idx,
                                              sequencer_initial_address=sequencer_initial_address)
@@ -88,7 +88,6 @@ class DynamicNetworkSimulation:
 
         return {
             'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
-            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(),
             'env_variables': env_variables
         }
 
@@ -124,12 +123,10 @@ class DynamicNetworkSimulation:
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
         for node_address, execution_dict in execution_cmds.items():
-            node_execution_cmd, proxy_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
-                                                                      execution_dict['proxy_execution_cmd'],
-                                                                      execution_dict['env_variables'])
+            node_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
+                                                 execution_dict['env_variables'])
 
             simulations_utils.launch_node(node_execution_cmd, env_variables)
-            simulations_utils.launch_node(proxy_execution_cmd, env_variables)
 
         self.sequencer_address, self.network_nodes_state = sequencer_address, initialized_network_snapshot
 
@@ -152,12 +149,9 @@ class DynamicNetworkSimulation:
 
             self.nodes_registry_client.add_snapshot(next_network_state)
             for node_address, execution_dict in new_nodes_cmds.items():
-                node_execution_cmd, proxy_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
-                                                                          execution_dict['proxy_execution_cmd'],
-                                                                          execution_dict['env_variables'])
-
+                node_execution_cmd, env_variables = (
+                    execution_dict['node_execution_cmd'], execution_dict['env_variables'])
                 simulations_utils.launch_node(node_execution_cmd, env_variables)
-                simulations_utils.launch_node(proxy_execution_cmd, env_variables)
 
         self.network_nodes_state = next_network_state
         self.nodes_registry_client.add_snapshot(self.network_nodes_state)
@@ -179,14 +173,14 @@ class DynamicNetworkSimulation:
 
         timeseries_nodes_last_idx = self.get_timeseries_last_node_idx()
         for next_network_state_idx in range(1, len(self.simulation_config.TIMESERIES_NODES_COUNT) - 1):
-            time.sleep(15)
+            time.sleep(30)
             self.transfer_state(
                 next_network_nodes_number=self.simulation_config.TIMESERIES_NODES_COUNT[next_network_state_idx],
                 nodes_last_index=timeseries_nodes_last_idx[next_network_state_idx - 1])
 
     def simulate_send_batches(self):
         sending_batches_count = 0
-        while sending_batches_count < 10:
+        while sending_batches_count < 1000:
             if self.network_nodes_state and self.sequencer_address:
                 random_node_address = random.choice(
                     list(set(list(self.network_nodes_state.keys())) - {self.sequencer_address}))
@@ -236,8 +230,6 @@ class DynamicNetworkSimulation:
 
 
 def simulate_dynamic_network():
-    DynamicNetworkSimulation(simulation_config=SimulationConfig()).run()
-
-
-if __name__ == "__main__":
-    simulate_dynamic_network()
+    DynamicNetworkSimulation(simulation_config=SimulationConfig(
+        TIMESERIES_NODES_COUNT=[2, 3, 4]
+    )).run()
