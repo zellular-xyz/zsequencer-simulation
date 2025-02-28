@@ -6,7 +6,7 @@ import shutil
 import socket
 import threading
 import time
-from typing import Dict, Tuple
+from typing import Dict
 
 from eigensdk.crypto.bls import attestation
 from web3 import Account
