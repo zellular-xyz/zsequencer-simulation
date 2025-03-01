@@ -5,8 +5,8 @@ import time
 import aiohttp
 
 # Number of requests and concurrency level
-TOTAL_REQUESTS = 3
-CONCURRENT_REQUESTS = 3
+TOTAL_REQUESTS = 100
+CONCURRENT_REQUESTS = 1
 
 # Target URL with dynamic app_name
 URL = f"http://localhost:6001/node/batches"
@@ -21,7 +21,7 @@ async def send_batch(session, semaphore):
     """Send a batch (POST request) to the server with form data."""
     async with semaphore:
         batch_data = {
-            'simple_app': [generate_random_string() for _ in range(1000)]
+            'simple_app': [generate_random_string() for _ in range(10)]
         }
         headers = {"Content-Type": "application/json"}
 
@@ -51,12 +51,5 @@ async def stress_test():
     print(f"Requests per second: {len(results) / (end_time - start_time):.2f}")
 
 
-# Run the stress test
 if __name__ == "__main__":
-    # For Python 3.7+
     asyncio.run(stress_test())
-
-    # Alternative for Python 3.6 or earlier:
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(stress_test())
-    # loop.close()

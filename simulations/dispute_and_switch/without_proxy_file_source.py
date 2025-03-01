@@ -57,13 +57,6 @@ APPS = {
 }
 
 
-def create_env_file(config_dict, output_path=".env"):
-    with open(output_path, 'w') as f:
-        for key, value in config_dict.items():
-            value_str = str(value)
-            if any(c in value_str for c in " ="):
-                value_str = f'"{value_str}"'
-            f.write(f"{key}={value_str}\n")
 
 
 def generate_envs(node_idx, sequencer_address):
@@ -77,7 +70,7 @@ def generate_envs(node_idx, sequencer_address):
         "ZSEQUENCER_SNAPSHOT_PATH": os.path.join(DST_DIR, f"db_{node_idx}"),
         "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": "",
         "ZSEQUENCER_PORT": str(BASE_PORT + node_idx),
-        "ZSEQUENCER_SNAPSHOT_CHUNK": str(1000),
+        "ZSEQUENCER_SNAPSHOT_CHUNK": str(7000),
         "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(3),
         "ZSEQUENCER_THRESHOLD_PERCENT": str(42),
         "ZSEQUENCER_SEND_TXS_INTERVAL": str(0.05),
@@ -85,7 +78,7 @@ def generate_envs(node_idx, sequencer_address):
         "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(10),
         "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(5),
         "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(70),
-        "ZSEQUENCER_API_BATCHES_LIMIT": str(100),
+        "ZSEQUENCER_API_BATCHES_LIMIT": str(5000),
         "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_address,
         "ZSEQUENCER_NODES_SOURCE": "file",
         "ZSEQUENCER_REGISTER_OPERATOR": "false",
