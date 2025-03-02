@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from web3 import Account
 
 import simulations.utils as simulations_utils
+from simulations.config import SimulationConfig
 
 
 class Keys(BaseModel):
@@ -16,10 +17,6 @@ class Keys(BaseModel):
     bls_key_pair: Any
     ecdsa_private_key: str
 
-
-DST_DIR = "/tmp/zellular_dev_net/"
-VERSION = "v0.0.14"
-BASE_PORT = 6000
 
 APPS = {
     "simple_app": {
@@ -57,34 +54,6 @@ APPS = {
 }
 
 
-
-
-def generate_envs(node_idx, sequencer_address):
-    return {
-        "ZSEQUENCER_BLS_KEY_FILE": os.path.join(DST_DIR, f"bls_key_{node_idx}.json"),
-        "ZSEQUENCER_BLS_KEY_PASSWORD": f'a{node_idx}',
-        "ZSEQUENCER_ECDSA_KEY_FILE": os.path.join(DST_DIR, f"ecdsa_key_{node_idx}.json"),
-        "ZSEQUENCER_ECDSA_KEY_PASSWORD": f'b{node_idx}',
-        "ZSEQUENCER_NODES_FILE": '/tmp/zellular_dev_net/nodes.json',
-        "ZSEQUENCER_APPS_FILE": '/tmp/zellular_dev_net/apps.json',
-        "ZSEQUENCER_SNAPSHOT_PATH": os.path.join(DST_DIR, f"db_{node_idx}"),
-        "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": "",
-        "ZSEQUENCER_PORT": str(BASE_PORT + node_idx),
-        "ZSEQUENCER_SNAPSHOT_CHUNK": str(7000),
-        "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(3),
-        "ZSEQUENCER_THRESHOLD_PERCENT": str(42),
-        "ZSEQUENCER_SEND_TXS_INTERVAL": str(0.05),
-        "ZSEQUENCER_SYNC_INTERVAL": str(0.05),
-        "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(10),
-        "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(5),
-        "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(70),
-        "ZSEQUENCER_API_BATCHES_LIMIT": str(5000),
-        "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_address,
-        "ZSEQUENCER_NODES_SOURCE": "file",
-        "ZSEQUENCER_REGISTER_OPERATOR": "false",
-        "ZSEQUENCER_VERSION": VERSION}
-
-
 def generate_keys() -> Keys:
     bls_private_key: str = secrets.token_hex(32)
     bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(bls_private_key)
@@ -104,58 +73,45 @@ def generate_node_info(node_idx, keys: Keys):
                 stake=10)
 
 
-def prepare_node(node_idx: int, keys: Keys):
-    data_dir: str = f"{DST_DIR}/db_{node_idx}"
-    if os.path.exists(data_dir):
-        shutil.rmtree(data_dir)
+def prepare_simulation_directory(simulation_conf):
+    for filename in os.listdir(simulation_conf.DST_DIR):
+        file_path = os.path.join(simulation_conf.DST_DIR, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
-    bls_key_file: str = f"{DST_DIR}/bls_key_{node_idx}.json"
-    bls_passwd: str = f'a{node_idx}'
-    bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(keys.bls_private_key)
-    bls_key_pair.save_to_file(bls_key_file, bls_passwd)
-
-    ecdsa_key_file: str = f"{DST_DIR}/ecdsa_key_{node_idx}.json"
-    ecdsa_passwd: str = f'b{node_idx}'
-    encrypted_json = Account.encrypt(keys.ecdsa_private_key, ecdsa_passwd)
-    with open(ecdsa_key_file, 'w') as f:
-        f.write(json.dumps(encrypted_json))
+    with open(os.path.join(simulation_conf.DST_DIR, 'apps.json'), "w") as file:
+        json.dump(APPS, file, indent=4)
 
 
 def main():
-    num_nodes = 3
+    num_nodes = 4
+    simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file")
 
-    sequencer_address = None
-    nodes_info = {}
-
-    for filename in os.listdir(DST_DIR):
-        file_path = os.path.join(DST_DIR, filename)
-        try:
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-                print(f"Removed {file_path}")
-        except Exception as e:
-            print(f"Error removing {file_path}: {e}")
-
-    with open(f"{DST_DIR}/apps.json", "w") as file:
-        json.dump(APPS, file, indent=4)
+    nodes_key_mapping = {}
 
     for node_idx in range(num_nodes):
         keys = generate_keys()
-        node_info = generate_node_info(node_idx, keys)
-        nodes_info[node_info['id']] = node_info
-        prepare_node(node_idx, keys)
-        if node_idx == 0:
-            sequencer_address = node_info['id']
+        node_address = Account().from_key(keys.ecdsa_private_key).address.lower()
+        nodes_key_mapping[node_address] = keys
 
-    with open(f"{DST_DIR}/nodes.json", "w") as file:
-        json.dump(nodes_info, file, indent=4)
+    sorted_addresses = sorted(list(nodes_key_mapping.keys()))
+    sequencer_address = sorted_addresses[0]
 
     nodes_execution_args = {}
-    for idx in range(num_nodes):
-        nodes_execution_args[idx] = {
-            'node_execution_cmd': simulations_utils.generate_node_execution_command(idx),
-            'env_variables': generate_envs(idx, sequencer_address)
+    nodes_info = {}
+    for node_idx, node_address in enumerate(sorted_addresses):
+        keys = nodes_key_mapping[node_address]
+        simulation_conf.prepare_node(node_idx=node_idx, keys=keys)
+        node_info = generate_node_info(node_idx, nodes_key_mapping[node_address])
+        nodes_info[node_address] = node_info
+        nodes_execution_args[node_address] = {
+            'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
+            'env_variables': simulation_conf.to_dict(node_idx=node_idx,
+                                                     sequencer_initial_address=sequencer_address)
         }
+
+    with open(os.path.join(simulation_conf.DST_DIR, 'nodes.json'), "w") as file:
+        json.dump(nodes_info, file, indent=4)
 
     for _, args in nodes_execution_args.items():
         simulations_utils.bootstrap_node(**args)
