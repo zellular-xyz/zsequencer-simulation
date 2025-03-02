@@ -15,9 +15,7 @@ def main():
     nodes_info = {}
     for idx, key_data in enumerate(network_keys):
         simulation_conf.prepare_node(node_idx=idx, keys=key_data.keys)
-        node_info = simulations_utils.generate_node_info(node_idx=idx,
-                                                         key_data=key_data)
-        nodes_info[key_data.address] = node_info
+        nodes_info[key_data.address] = simulations_utils.generate_node_info(node_idx=idx, key_data=key_data).dict()
         nodes_execution_args[key_data.address] = ExecutionData(
             execution_cmd=simulations_utils.generate_node_execution_command(idx),
             env_variables=simulation_conf.to_dict(node_idx=idx, sequencer_initial_address=sequencer_address))

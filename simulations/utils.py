@@ -9,6 +9,7 @@ from uuid import uuid4
 from typing import Dict, List, Any, Tuple
 from simulations.schema import Keys, KeyData
 from eigensdk.crypto.bls import attestation
+from historical_nodes_registry import NodeInfo
 from pydantic import BaseModel
 from web3 import Account
 import config
@@ -40,11 +41,11 @@ def generate_network_keys(network_nodes_num: int) -> Tuple[str, List[KeyData]]:
 
 
 def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10):
-    return dict(id=key_data.address,
-                public_key_g2=key_data.keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
-                address=key_data.address,
-                socket=f"http://localhost:{str(6000 + node_idx)}",
-                stake=stake)
+    return NodeInfo(id=key_data.address,
+                    public_key_g2=key_data.keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
+                    address=key_data.address,
+                    socket=f"http://localhost:{str(6000 + node_idx)}",
+                    stake=stake)
 
 
 def prepare_simulation_directory(simulation_conf):
