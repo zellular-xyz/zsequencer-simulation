@@ -1,5 +1,4 @@
 import json
-import os
 
 import simulations.utils as simulations_utils
 from simulations.config import SimulationConfig
@@ -21,11 +20,13 @@ def main():
         nodes_info[key_data.address] = node_info
         nodes_execution_args[key_data.address] = ExecutionData(
             execution_cmd=simulations_utils.generate_node_execution_command(idx),
-            env_variables=simulation_conf.to_dict(node_idx=idx, sequencer_initial_address=sequencer_address)
-        )
+            env_variables=simulation_conf.to_dict(node_idx=idx, sequencer_initial_address=sequencer_address))
 
-    with open(os.path.join(simulation_conf.DST_DIR, 'nodes.json'), "w") as file:
+    with open(simulation_conf.nodes_file, "w") as file:
         json.dump(nodes_info, file, indent=4)
+
+    with open(simulation_conf.apps_file, "w") as file:
+        json.dump(simulations_utils.APPS, file, indent=4)
 
     for _, execution_data in nodes_execution_args.items():
         simulations_utils.bootstrap_node(env_variables=execution_data.env_variables,

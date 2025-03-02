@@ -60,6 +60,14 @@ class SimulationConfig(BaseModel):
     def get_ecdsa_key_passwd(node_idx):
         return f'b{node_idx}'
 
+    @property
+    def apps_file(self):
+        return os.path.join(self.DST_DIR, "apps.json")
+
+    @property
+    def nodes_file(self):
+        return os.path.join(self.DST_DIR, "nodes.json")
+
     def prepare_node(self, node_idx: int, keys: Keys):
         data_dir: str = self.get_snapshot_dir(node_idx=node_idx)
         if os.path.exists(data_dir):
@@ -74,8 +82,8 @@ class SimulationConfig(BaseModel):
 
     def to_dict(self, node_idx: int, sequencer_initial_address: str) -> dict:
         return {
-            "ZSEQUENCER_APPS_FILE": os.path.join(self.DST_DIR, "apps.json"),
-            "ZSEQUENCER_NODES_FILE": os.path.join(self.DST_DIR, "nodes.json"),
+            "ZSEQUENCER_APPS_FILE": self.apps_file,
+            "ZSEQUENCER_NODES_FILE": self.nodes_file,
             "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": self.HISTORICAL_NODES_REGISTRY_SOCKET,
             "ZSEQUENCER_HOST": "localhost",
             "ZSEQUENCER_PORT": str(self.BASE_PORT + node_idx),
