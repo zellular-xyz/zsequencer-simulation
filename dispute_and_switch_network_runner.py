@@ -1,4 +1,5 @@
-from simulations.simulation_with_proxy import simulate_dispute_and_switch
+from simulations.proxy.simulation_with_proxy import simulate_dispute_and_switch
+
 # from simulations.dispute_and_switch import simulate_dispute_and_switch_without_proxy
 
 if __name__ == '__main__':

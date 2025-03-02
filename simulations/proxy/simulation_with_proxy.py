@@ -27,7 +27,7 @@ def extract_port(socket_str):
         raise ValueError("No valid port found in the given string.")
 
 
-class DisputeAndSwitchSimulation:
+class ProxySimulation:
 
     def __init__(self, simulation_config: SimulationConfig, logger):
         self.simulation_config = simulation_config
@@ -184,5 +184,5 @@ class DisputeAndSwitchSimulation:
 
 
 def simulate_dispute_and_switch():
-    DisputeAndSwitchSimulation(simulation_config=SimulationConfig(),
-                               logger=logging.getLogger(__name__)).run()
+    ProxySimulation(simulation_config=SimulationConfig(),
+                    logger=logging.getLogger(__name__)).run()

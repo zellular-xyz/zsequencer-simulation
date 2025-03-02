@@ -9,7 +9,7 @@ TOTAL_REQUESTS = 100
 CONCURRENT_REQUESTS = 1
 
 # Target URL with dynamic app_name
-URL = f"http://localhost:6001/node/batches"
+URL = f"http://localhost:6003/node/batches"
 
 
 def generate_random_string(length=10):

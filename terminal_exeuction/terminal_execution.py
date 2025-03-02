@@ -9,9 +9,6 @@ from enum import Enum
 import config
 
 
-# BASE_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples")
-
-
 class OSType(Enum):
     MACOS = "macos"
     LINUX = "linux"
