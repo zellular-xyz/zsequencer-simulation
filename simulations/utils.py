@@ -3,21 +3,17 @@ import os
 import random
 import secrets
 import shutil
+import json
 import string
 from uuid import uuid4
-from typing import Dict, List, Any
-
+from typing import Dict, List, Any, Tuple
+from simulations.schema import Keys, KeyData
 from eigensdk.crypto.bls import attestation
+from historical_nodes_registry import NodeInfo
 from pydantic import BaseModel
-
+from web3 import Account
 import config
 from terminal_exeuction import run_command_on_terminal
-
-
-class Keys(BaseModel):
-    bls_private_key: str
-    bls_key_pair: Any
-    ecdsa_private_key: str
 
 
 def generate_keys() -> Keys:
@@ -28,6 +24,38 @@ def generate_keys() -> Keys:
     return Keys(bls_private_key=bls_private_key,
                 bls_key_pair=bls_key_pair,
                 ecdsa_private_key=ecdsa_private_key)
+
+
+def generate_network_keys(network_nodes_num: int) -> Tuple[str, List[KeyData]]:
+    network_keys = []
+
+    for _ in range(network_nodes_num):
+        keys = generate_keys()
+        address = Account().from_key(keys.ecdsa_private_key).address.lower()
+        network_keys.append(KeyData(keys=keys, address=address))
+
+    network_keys = sorted(network_keys, key=lambda network_key: network_key.address)
+    sequencer_address = network_keys[0].address
+
+    return sequencer_address, network_keys
+
+
+def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10):
+    return NodeInfo(id=key_data.address,
+                    public_key_g2=key_data.keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
+                    address=key_data.address,
+                    socket=f"http://localhost:{str(6000 + node_idx)}",
+                    stake=stake)
+
+
+def prepare_simulation_directory(simulation_conf):
+    for filename in os.listdir(simulation_conf.DST_DIR):
+        file_path = os.path.join(simulation_conf.DST_DIR, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+    with open(os.path.join(simulation_conf.DST_DIR, 'apps.json'), "w") as file:
+        json.dump(simulation_conf.APPS, file, indent=4)
 
 
 def generate_node_execution_command(node_idx: int) -> str:
@@ -87,3 +115,39 @@ def generate_transactions(batch_size: int) -> List[Dict]:
             "version": 6,
         } for _ in range(batch_size)
     ]
+
+
+APPS = {
+    "simple_app": {
+        "url": "",
+        "public_keys": []
+    },
+    "orderbook": {
+        "url": "",
+        "public_keys": []
+    },
+    "new_app": {
+        "url": "",
+        "public_keys": []
+    },
+    "new_app2": {
+        "url": "",
+        "public_keys": []
+    },
+    "your-app-name": {
+        "url": "",
+        "public_keys": []
+    },
+    "your-app-name2": {
+        "url": "",
+        "public_keys": []
+    },
+    "your-me": {
+        "url": "",
+        "public_keys": []
+    },
+    "test": {
+        "url": "",
+        "public_keys": []
+    }
+}

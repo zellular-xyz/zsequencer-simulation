@@ -57,39 +57,25 @@ class DynamicNetworkSimulation:
                      keys: simulations_utils.Keys,
                      sequencer_initial_address: str) -> Dict[str, str]:
 
-        DST_DIR = self.simulation_config.DST_DIR
-        data_dir: str = f"{DST_DIR}/db_{node_idx}"
-        if os.path.exists(data_dir):
-            shutil.rmtree(data_dir)
+        env_variables = self.simulation_config.to_dict(node_idx=node_idx,
+                                                       sequencer_initial_address=sequencer_initial_address)
 
-        bls_key_file: str = f"{DST_DIR}/bls_key{node_idx}.json"
-        bls_passwd: str = f'a{node_idx}'
+        if os.path.exists(env_variables["ZSEQUENCER_SNAPSHOT_PATH"]):
+            shutil.rmtree(env_variables["ZSEQUENCER_SNAPSHOT_PATH"])
+
         bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(keys.bls_private_key)
-        bls_key_pair.save_to_file(bls_key_file, bls_passwd)
+        bls_key_pair.save_to_file(env_variables["ZSEQUENCER_BLS_KEY_FILE"],
+                                  env_variables["ZSEQUENCER_BLS_KEY_PASSWORD"])
 
-        ecdsa_key_file: str = f"{DST_DIR}/ecdsa_key{node_idx}.json"
-        ecdsa_passwd: str = f'b{node_idx}'
-        encrypted_json = Account.encrypt(keys.ecdsa_private_key, ecdsa_passwd)
-        with open(ecdsa_key_file, 'w') as f:
+        encrypted_json = Account.encrypt(keys.ecdsa_private_key, env_variables["ZSEQUENCER_ECDSA_KEY_PASSWORD"])
+        with open(env_variables["ZSEQUENCER_ECDSA_KEY_FILE"], 'w') as f:
             f.write(json.dumps(encrypted_json))
-
-        env_variables = {
-            "ZSEQUENCER_BLS_KEY_FILE": bls_key_file,
-            "ZSEQUENCER_BLS_KEY_PASSWORD": bls_passwd,
-            "ZSEQUENCER_ECDSA_KEY_FILE": ecdsa_key_file,
-            "ZSEQUENCER_ECDSA_KEY_PASSWORD": ecdsa_passwd,
-            "ZSEQUENCER_SNAPSHOT_PATH": data_dir,
-            "ZSEQUENCER_REGISTER_OPERATOR": "false",
-            "ZSEQUENCER_VERSION": "v0.0.13",
-            "ZSEQUENCER_NODES_FILE": "",
-            **self.simulation_config.to_dict(node_idx=node_idx,
-                                             sequencer_initial_address=sequencer_initial_address)
-        }
 
         return {
             'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
             'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(),
-            'env_variables': env_variables
+            'env_variables': self.simulation_config.to_dict(node_idx=node_idx,
+                                                            sequencer_initial_address=sequencer_initial_address)
         }
 
     def wait_nodes_registry_server(self, timeout: float = 20.0, interval: float = 0.5):
