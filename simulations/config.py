@@ -33,6 +33,7 @@ class SimulationConfig(BaseModel):
     TIMESERIES_NODES_COUNT: List[int] = Field([3, 4, 6],
                                               description="count of nodes available on network at different states")
     LOGS_DIRECTORY: str = Field("/tmp/zellular-simulation-logs", description="Directory to store logs")
+    PROXY_SERVER_WORKERS_COUNT: int = Field(4, description="The number of workers count for proxy server")
 
     class Config:
         validate_assignment = True
@@ -67,6 +68,9 @@ class SimulationConfig(BaseModel):
     @property
     def nodes_file(self):
         return os.path.join(self.DST_DIR, "nodes.json")
+
+    def get_proxy_port(self, node_idx):
+        return self.PROXY_BASE_PORT + node_idx
 
     def prepare_node(self, node_idx: int, keys: Keys):
         data_dir: str = self.get_snapshot_dir(node_idx=node_idx)
@@ -107,7 +111,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_ECDSA_KEY_PASSWORD": f'b{node_idx}',
             # Proxy config
             "ZSEQUENCER_PROXY_HOST": "localhost",
-            "ZSEQUENCER_PROXY_PORT": str(self.PROXY_BASE_PORT + node_idx),
+            "ZSEQUENCER_PROXY_PORT": str(self.get_proxy_port(node_idx)),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1"
         }
