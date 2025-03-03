@@ -4,9 +4,10 @@ import simulations.utils as simulations_utils
 from simulations.config import SimulationConfig
 from simulations.schema import ExecutionData
 
+NETWORK_NODES_COUNT = 4
 
-def main():
-    network_nodes_num = 4
+
+def main(network_nodes_num=NETWORK_NODES_COUNT):
     simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file")
 
     sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=network_nodes_num)

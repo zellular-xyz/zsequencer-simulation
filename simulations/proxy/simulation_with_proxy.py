@@ -88,10 +88,8 @@ class ProxySimulation:
 
 
 def simulate_proxy():
-    ProxySimulation(simulation_config=SimulationConfig(
-        ZSEQUENCER_NODES_SOURCE="historical_nodes_registry",
-        TIMESERIES_NODES_COUNT=[4]),
-        logger=logging.getLogger(__name__)).run()
+    ProxySimulation(simulation_config=SimulationConfig(ZSEQUENCER_NODES_SOURCE="historical_nodes_registry"),
+                    logger=logging.getLogger(__name__)).run()
 
 
 if __name__ == "__main__":
