@@ -31,6 +31,13 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
         simulations_utils.bootstrap_node(env_variables=execution_data.env_variables,
                                          node_execution_cmd=execution_data.execution_cmd)
 
+        # Printing list of nodes id and socket sorted by ids for the sake of simplicity on tracing sequencer switch
+        sorted_ids = [
+            (item['id'], item['socket']) for item in
+            sorted(list(nodes_info.values()), key=lambda item: item['id'])
+        ]
+        print(sorted_ids)
+
 
 if __name__ == "__main__":
     main()

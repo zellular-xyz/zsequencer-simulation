@@ -21,6 +21,7 @@ from historical_nodes_registry import (NodesRegistryClient,
                                        SnapShotType,
                                        run_registry_server)
 from simulations.config import SimulationConfig
+from simulations.schema import ExecutionData
 
 
 class DynamicNetworkSimulation:
@@ -44,40 +45,6 @@ class DynamicNetworkSimulation:
                                        else acc[-1]], range(1, len(timeseries_nodes_count)),
                       [timeseries_nodes_count[0] - 1])
 
-    def generate_node_info(self, node_idx: int, keys: simulations_utils.Keys) -> NodeInfo:
-        address = Account().from_key(keys.ecdsa_private_key).address.lower()
-        return NodeInfo(id=address,
-                        public_key_g2=keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
-                        address=address,
-                        socket=f"{self.simulation_config.HOST}:{str(self.simulation_config.BASE_PORT + node_idx)}",
-                        stake=10)
-
-    def prepare_node(self,
-                     node_idx: int,
-                     keys: simulations_utils.Keys,
-                     sequencer_initial_address: str) -> Dict[str, str]:
-
-        env_variables = self.simulation_config.to_dict(node_idx=node_idx,
-                                                       sequencer_initial_address=sequencer_initial_address)
-
-        if os.path.exists(env_variables["ZSEQUENCER_SNAPSHOT_PATH"]):
-            shutil.rmtree(env_variables["ZSEQUENCER_SNAPSHOT_PATH"])
-
-        bls_key_pair: attestation.KeyPair = attestation.new_key_pair_from_string(keys.bls_private_key)
-        bls_key_pair.save_to_file(env_variables["ZSEQUENCER_BLS_KEY_FILE"],
-                                  env_variables["ZSEQUENCER_BLS_KEY_PASSWORD"])
-
-        encrypted_json = Account.encrypt(keys.ecdsa_private_key, env_variables["ZSEQUENCER_ECDSA_KEY_PASSWORD"])
-        with open(env_variables["ZSEQUENCER_ECDSA_KEY_FILE"], 'w') as f:
-            f.write(json.dumps(encrypted_json))
-
-        return {
-            'node_execution_cmd': simulations_utils.generate_node_execution_command(node_idx),
-            'proxy_execution_cmd': simulations_utils.generate_node_proxy_execution_command(),
-            'env_variables': self.simulation_config.to_dict(node_idx=node_idx,
-                                                            sequencer_initial_address=sequencer_initial_address)
-        }
-
     def wait_nodes_registry_server(self, timeout: float = 20.0, interval: float = 0.5):
         start_time = time.time()
         host, port = self.simulation_config.HISTORICAL_NODES_REGISTRY_HOST, self.simulation_config.HISTORICAL_NODES_REGISTRY_PORT
@@ -93,31 +60,24 @@ class DynamicNetworkSimulation:
         raise TimeoutError(f"Server did not start within {timeout} seconds.")
 
     def initialize_network(self, nodes_number: int):
-        sequencer_address = None
+        sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=nodes_number)
         initialized_network_snapshot: SnapShotType = {}
         execution_cmds = {}
-        for node_idx in range(nodes_number):
-            keys = simulations_utils.generate_keys()
-            node_info = self.generate_node_info(node_idx=node_idx, keys=keys)
-            if node_idx == 0:
-                sequencer_address = node_info.id
 
-            initialized_network_snapshot[node_info.id] = node_info
-            execution_cmds[node_info.id] = self.prepare_node(node_idx=node_idx,
-                                                             keys=keys,
-                                                             sequencer_initial_address=sequencer_address)
+        for node_idx, key_data in enumerate(network_keys):
+            initialized_network_snapshot[key_data.address] = simulations_utils.generate_node_info(node_idx=node_idx,
+                                                                                                  key_data=key_data)
+            self.simulation_config.prepare_node(node_idx=node_idx, keys=key_data.keys)
+            execution_cmds[key_data.address] = ExecutionData(
+                execution_cmd=simulations_utils.generate_node_execution_command(node_idx),
+                env_variables=self.simulation_config.to_dict(node_idx=node_idx,
+                                                             sequencer_initial_address=sequencer_address))
 
         self.nodes_registry_client.add_snapshot(initialized_network_snapshot)
 
-        for node_address, execution_dict in execution_cmds.items():
-            node_execution_cmd, proxy_execution_cmd, env_variables = (execution_dict['node_execution_cmd'],
-                                                                      execution_dict['proxy_execution_cmd'],
-                                                                      execution_dict['env_variables'])
-
-            simulations_utils.launch_node(node_execution_cmd, env_variables)
-            simulations_utils.launch_node(proxy_execution_cmd, env_variables)
-
-        self.sequencer_address, self.network_nodes_state = sequencer_address, initialized_network_snapshot
+        for _, execution_data in execution_cmds.items():
+            simulations_utils.bootstrap_node(env_variables=execution_data.env_variables,
+                                             node_execution_cmd=execution_data.execution_cmd)
 
     def transfer_state(self, next_network_nodes_number: int, nodes_last_index: int):
         current_network_nodes_number = len(self.network_nodes_state)
@@ -149,26 +109,26 @@ class DynamicNetworkSimulation:
         self.nodes_registry_client.add_snapshot(self.network_nodes_state)
 
     def simulate_network_nodes_transition(self):
-        simulations_utils.delete_directory_contents(self.simulation_config.DST_DIR)
-
-        if not os.path.exists(self.simulation_config.DST_DIR):
-            os.makedirs(self.simulation_config.DST_DIR)
-
-        script_dir: str = os.path.dirname(os.path.abspath(__file__))
-        parent_dir: str = os.path.dirname(script_dir)
-        os.chdir(parent_dir)
-
-        with open(file=self.simulation_config.APPS_FILE, mode="w", encoding="utf-8") as file:
-            file.write(json.dumps({f"{self.simulation_config.APP_NAME}": {"url": "", "public_keys": []}}))
+        # simulations_utils.delete_directory_contents(self.simulation_config.DST_DIR)
+        #
+        # if not os.path.exists(self.simulation_config.DST_DIR):
+        #     os.makedirs(self.simulation_config.DST_DIR)
+        #
+        # script_dir: str = os.path.dirname(os.path.abspath(__file__))
+        # parent_dir: str = os.path.dirname(script_dir)
+        # os.chdir(parent_dir)
+        #
+        # with open(file=self.simulation_config.apps_file, mode="w", encoding="utf-8") as file:
+        #     file.write(json.dumps({f"{self.simulation_config.APP_NAME}": {"url": "", "public_keys": []}}))
 
         self.initialize_network(self.simulation_config.TIMESERIES_NODES_COUNT[0])
 
-        timeseries_nodes_last_idx = self.get_timeseries_last_node_idx()
-        for next_network_state_idx in range(1, len(self.simulation_config.TIMESERIES_NODES_COUNT) - 1):
-            time.sleep(15)
-            self.transfer_state(
-                next_network_nodes_number=self.simulation_config.TIMESERIES_NODES_COUNT[next_network_state_idx],
-                nodes_last_index=timeseries_nodes_last_idx[next_network_state_idx - 1])
+        # timeseries_nodes_last_idx = self.get_timeseries_last_node_idx()
+        # for next_network_state_idx in range(1, len(self.simulation_config.TIMESERIES_NODES_COUNT) - 1):
+        #     time.sleep(15)
+        #     self.transfer_state(
+        #         next_network_nodes_number=self.simulation_config.TIMESERIES_NODES_COUNT[next_network_state_idx],
+        #         nodes_last_index=timeseries_nodes_last_idx[next_network_state_idx - 1])
 
     def simulate_send_batches(self):
         sending_batches_count = 0
@@ -222,7 +182,8 @@ class DynamicNetworkSimulation:
 
 
 def simulate_dynamic_network():
-    DynamicNetworkSimulation(simulation_config=SimulationConfig()).run()
+    DynamicNetworkSimulation(
+        simulation_config=SimulationConfig(ZSEQUENCER_NODES_SOURCE="historical_nodes_registry")).run()
 
 
 if __name__ == "__main__":
