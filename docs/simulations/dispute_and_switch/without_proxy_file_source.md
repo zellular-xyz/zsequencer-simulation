@@ -15,19 +15,19 @@ This simulation tests the system’s ability to handle the failure of a leader n
 1. Run the following command to start the simulation:  
 
     ```bash
-    python -m simulations.dispute_and_switch.without_proxy_file_source
+    python -m clients.node_client
     ```  
 
 2. This will:  
    - Launch a network with four nodes in separate terminals.  
    - Print a sorted list of nodes (address, socket) to verify the leader sequence.  
 
-3. **Before sending dummy batches**, check the `URL` variable in the `stress_test.stress_test` script and set it to a valid URL. Some nodes may be down, so ensure the URL points to an active node.  
+3. **Before sending dummy batches**, check the `main` function in the `clients.node_client` script and set host and port. Some nodes may be down, so ensure the URL points to an active node.  
 
 4. To send dummy batches to the network (excluding the leader), use the following script:  
 
     ```bash
-    python -m stress_test.stress_test
+    python -m clients.node_client
     ```  
 
 5. Manually terminate the sequencer process based on the printed priority list.  
