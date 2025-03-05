@@ -35,7 +35,7 @@ class SimulationConfig(BaseModel):
                                               description="count of nodes available on network at different states")
     LOGS_DIRECTORY: str = Field("/tmp/zellular-simulation-logs", description="Directory to store logs")
     PROXY_SERVER_WORKERS_COUNT: int = Field(4, description="The number of workers count for proxy server")
-    IS_SIMULATION: bool = Field(True, description="Indicates whether or not the simulation")
+    MODE: str = Field("dev", description="The stage mode of running node can be set on dev, test, prod")
 
     class Config:
         validate_assignment = True
@@ -104,6 +104,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_API_BATCHES_LIMIT": str(self.ZSEQUENCER_API_BATCHES_LIMIT),
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
             "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCE,
+            "ZSEQUENCER_MODE": self.MODE,
             # SnapShot Path
             "ZSEQUENCER_SNAPSHOT_PATH": os.path.join(self.DST_DIR, f"db_{node_idx}"),
             # Encryption Files Configs
@@ -116,6 +117,4 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_PORT": str(self.get_proxy_port(node_idx)),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
-
-            "ZSEQUENCER_IS_SIMULATION": 'true' if self.IS_SIMULATION else 'false'
         }
