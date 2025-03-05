@@ -40,11 +40,15 @@ def generate_network_keys(network_nodes_num: int) -> Tuple[str, List[KeyData]]:
     return sequencer_address, network_keys
 
 
+BASE_NODE_PORT = 6001
+BASE_PROXY_PORT = 7001
+
+
 def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10):
     return NodeInfo(id=key_data.address,
                     public_key_g2=key_data.keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
                     address=key_data.address,
-                    socket=f"http://localhost:{str(6000 + node_idx)}",
+                    socket=f"http://localhost:{str(BASE_NODE_PORT + node_idx)}",
                     stake=stake)
 
 

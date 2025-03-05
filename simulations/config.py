@@ -8,13 +8,14 @@ from pydantic import BaseModel, Field
 from web3 import Account
 
 from simulations.schema import Keys
+from simulations.utils import BASE_NODE_PORT, BASE_PROXY_PORT
 
 
 class SimulationConfig(BaseModel):
     NUM_INSTANCES: int = Field(3, description="Number of instances")
     HOST: str = Field("http://127.0.0.1", description="Host address")
-    BASE_PORT: int = Field(6000, description="Base port number")
-    PROXY_BASE_PORT: int = Field(7000, description="Base proxy port number")
+    BASE_PORT: int = Field(BASE_NODE_PORT, description="Base port number")
+    PROXY_BASE_PORT: int = Field(BASE_PROXY_PORT, description="Base proxy port number")
     THRESHOLD_PERCENT: int = Field(42, description="Threshold percentage")
     DST_DIR: str = Field("/tmp/zellular_dev_net", description="Destination directory")
     HISTORICAL_NODES_REGISTRY_HOST: str = Field("localhost", description="Historical nodes registry host")
@@ -34,6 +35,7 @@ class SimulationConfig(BaseModel):
                                               description="count of nodes available on network at different states")
     LOGS_DIRECTORY: str = Field("/tmp/zellular-simulation-logs", description="Directory to store logs")
     PROXY_SERVER_WORKERS_COUNT: int = Field(4, description="The number of workers count for proxy server")
+    IS_SIMULATION: bool = Field(True, description="Indicates whether or not the simulation")
 
     class Config:
         validate_assignment = True
@@ -113,5 +115,7 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_HOST": "localhost",
             "ZSEQUENCER_PROXY_PORT": str(self.get_proxy_port(node_idx)),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
-            "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1"
+            "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
+
+            "IS_SIMULATION": 'true' if self.IS_SIMULATION else 'false'
         }
