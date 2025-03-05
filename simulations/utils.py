@@ -121,33 +121,5 @@ APPS = {
     "simple_app": {
         "url": "",
         "public_keys": []
-    },
-    "orderbook": {
-        "url": "",
-        "public_keys": []
-    },
-    "new_app": {
-        "url": "",
-        "public_keys": []
-    },
-    "new_app2": {
-        "url": "",
-        "public_keys": []
-    },
-    "your-app-name": {
-        "url": "",
-        "public_keys": []
-    },
-    "your-app-name2": {
-        "url": "",
-        "public_keys": []
-    },
-    "your-me": {
-        "url": "",
-        "public_keys": []
-    },
-    "test": {
-        "url": "",
-        "public_keys": []
     }
 }
