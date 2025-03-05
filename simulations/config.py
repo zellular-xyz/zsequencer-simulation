@@ -117,5 +117,5 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
 
-            "IS_SIMULATION": 'true' if self.IS_SIMULATION else 'false'
+            "ZSEQUENCER_IS_SIMULATION": 'true' if self.IS_SIMULATION else 'false'
         }

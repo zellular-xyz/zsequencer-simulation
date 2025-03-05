@@ -59,6 +59,7 @@ class DisputeAndSwitchSimulation:
                                              node_execution_cmd=execution_data.execution_cmd)
 
     def run(self):
+        simulations_utils.remove_directory(self.simulation_config.DST_DIR)
         self.nodes_registry_thread = threading.Thread(
             target=run_registry_server,
             args=(self.simulation_config.HISTORICAL_NODES_REGISTRY_HOST,

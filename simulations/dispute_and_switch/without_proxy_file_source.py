@@ -9,11 +9,13 @@ NETWORK_NODES_COUNT = 4
 
 def main(network_nodes_num=NETWORK_NODES_COUNT):
     simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file")
+    simulations_utils.remove_directory(simulation_conf.DST_DIR)
 
     sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=network_nodes_num)
 
     nodes_execution_args = {}
     nodes_info = {}
+
     for idx, key_data in enumerate(network_keys):
         simulation_conf.prepare_node(node_idx=idx, keys=key_data.keys)
         nodes_info[key_data.address] = simulations_utils.generate_node_info(node_idx=idx, key_data=key_data).dict()

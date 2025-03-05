@@ -86,19 +86,21 @@ def generate_node_proxy_execution_command(port, workers) -> str:
     return f"cd {config.ZSEQUENCER_PROJECT_ROOT} && source {config.ZSEQUENCER_PROJECT_VIRTUAL_ENV} && uvicorn --app-dir proxy {proxy_runner_path}:{server_app} --host 0.0.0.0 --port {port} --workers {workers}"
 
 
-def delete_directory_contents(directory):
-    if not os.path.exists(directory):
-        return
+def remove_directory(path: str) -> None:
+    """
+    Remove a directory and its contents using shutil.
 
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
+    Args:
+        path: Path to the directory to remove.
+    """
+    if os.path.exists(path):
         try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print(f"Error deleting {file_path}: {e}")
+            shutil.rmtree(path)
+            print(f"Removed {path} and its contents")
+        except OSError as e:
+            print(f"Error: {e}")
+    else:
+        print(f"Directory {path} does not exist")
 
 
 def launch_node(cmd, env_variables):

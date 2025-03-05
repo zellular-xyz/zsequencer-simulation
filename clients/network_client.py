@@ -54,9 +54,10 @@ class NetworkClient:
 if __name__ == "__main__":
     # Example usage with multiple targets, some might be down
     targets = [
-        ("localhost", 6001),  # Assume this is up
-        ("localhost", 6002),  # Assume this is down
-        ("localhost", 6003)  # Assume this is up
+        ("localhost", 6001),
+        ("localhost", 6002),
+        ("localhost", 6003),
+        ("localhost", 6004),
     ]
 
     network = NetworkClient(
