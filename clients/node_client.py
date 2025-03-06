@@ -4,6 +4,7 @@ import random
 import string
 import time
 import aiohttp
+from simulations.config import VERSION
 
 # Configure logging once at the module level
 logging.basicConfig(
@@ -40,7 +41,8 @@ class NodeClient:
             batch_data = {
                 'simple_app': [self.generate_random_string() for _ in range(10)]
             }
-            headers = {"Content-Type": "application/json"}
+            headers = {"Content-Type": "application/json",
+                       "Version": VERSION}
 
             try:
                 async with session.put(self.url, json=batch_data, headers=headers) as response:
@@ -88,7 +90,7 @@ class NodeClient:
                 current_time = time.time()
                 successful_requests = len(self.results)  # Only successful requests
                 actual_rps = successful_requests / (current_time - self.start_time) if (
-                                                                                                   current_time - self.start_time) > 0 else 0
+                                                                                               current_time - self.start_time) > 0 else 0
 
                 if int(current_time - self.start_time) > int(elapsed_time):
                     self.logger.info(

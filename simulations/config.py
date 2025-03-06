@@ -10,6 +10,8 @@ from web3 import Account
 from simulations.schema import Keys
 from simulations.utils import BASE_NODE_PORT, BASE_PROXY_PORT
 
+VERSION = "v0.0.14"
+
 
 class SimulationConfig(BaseModel):
     NUM_INSTANCES: int = Field(3, description="Number of instances")
