@@ -39,6 +39,9 @@ class SimulationConfig(BaseModel):
     PROXY_SERVER_WORKERS_COUNT: int = Field(4, description="The number of workers count for proxy server")
     MODE: str = Field("dev", description="The stage mode of running node can be set on dev, test, prod")
 
+    # Sequencer Malfunction config
+    OUT_OF_REACH_SIMULATION: bool = Field(False, description="")
+
     class Config:
         validate_assignment = True
 
@@ -119,4 +122,6 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_PORT": str(self.get_proxy_port(node_idx)),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
+            # Sequencer MalFunction Simulation config
+            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION": "true" if self.OUT_OF_REACH_SIMULATION else "false"
         }
