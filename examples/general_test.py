@@ -16,6 +16,15 @@ BATCH_NUMBER: int = 200
 CHECK_STATE_INTERVAL: float = 0.05
 THREAD_NUMBERS_FOR_SENDING_TXS = 50
 
+# Configure logging at the start
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # This sends logs to console
+    ]
+)
+
 zlogger = logging.getLogger(__name__)
 
 
