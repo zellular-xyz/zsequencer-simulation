@@ -108,7 +108,7 @@ def send_batches_in_bulk_mode(node_url: str, app_name: str, batches_count: int, 
         try:
             response: requests.Response = requests.put(
                 url=f"{node_url}/node/batches",
-                data=json.dumps({app_name: generate_dummy_batches(batch_size=10, batches_count=batches_count)}),
+                data=json.dumps({app_name: generate_dummy_batches(batch_size=10, batches_count=iteration_batches_count)}),
                 headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
