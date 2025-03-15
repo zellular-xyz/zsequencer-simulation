@@ -6,7 +6,9 @@ import logging
 import threading
 import time
 import math
-from typing import Any
+import random
+import string
+from typing import Any, List, Dict
 
 import requests
 from requests.exceptions import RequestException
@@ -26,7 +28,6 @@ logging.basicConfig(
 )
 
 zlogger = logging.getLogger(__name__)
-
 
 
 def check_state(
@@ -99,30 +100,53 @@ def send_batches_with_threads(
     zlogger.info("All batches have been sent.")
 
 
-def generate_dummy_transactions(
-        batch_size: int, batch_number: int
-) -> list[dict[str, Any]]:
+def send_batches_in_bulk_mode(node_url: str, app_name: str, batches_count: int, bulk_count: int):
+    iteration_batches_count = batches_count // bulk_count
+    for iteration in range(bulk_count):
+        zlogger.info(f'Sending {iteration_batches_count} batches in iteration {iteration}')
+
+        try:
+            response: requests.Response = requests.put(
+                url=f"{node_url}/node/batches",
+                data=json.dumps({app_name: generate_dummy_batches(batch_size=10, batches_count=batches_count)}),
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+        except RequestException:
+            zlogger.error(f"Error occurred while sending batches in iteration {iteration}")
+
+
+def generate_random_string(length=15):
+    characters = string.ascii_letters + string.digits  # a-zA-Z0-9
+    return ''.join(random.choice(characters) for _ in range(length))
+
+
+def generate_dummy_batches(
+        batch_size: int, batches_count: int
+) -> List[List[Dict]]:
     """Create batches of transactions."""
     return [
         [{
             "operation": "foo",
-            "serial": f"{batch_num}_{tx_num}",
+            "serial": generate_random_string(),
             "version": 6,
-        } for tx_num in range(batch_size)]
-        for batch_num in range(batch_number)]
+        } for _ in range(batch_size)]
+        for _ in range(batches_count)]
+
+
+TOTAL_BATCHES_COUNT = 10_000
+BULK_COUNT = 10
 
 
 def main() -> None:
     """Run the simple app."""
-    # args: argparse.Namespace = parse_args()
-    app_name= 'simple_app'
+    app_name = 'simple_app'
     node_url = 'http://localhost:6002'
-    batches: list[dict[str, Any]] = generate_dummy_transactions(
-        BATCH_SIZE, BATCH_NUMBER
-    )
+
     sender_thread: threading.Thread = threading.Thread(
-        target=send_batches_with_threads, args=[app_name, batches, node_url, THREAD_NUMBERS_FOR_SENDING_TXS]
+        target=send_batches_in_bulk_mode, args=[node_url, app_name, TOTAL_BATCHES_COUNT, BULK_COUNT]
     )
+
     sync_thread: threading.Thread = threading.Thread(
         target=check_state,
         args=[app_name, node_url, BATCH_NUMBER, BATCH_SIZE],
