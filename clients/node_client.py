@@ -19,7 +19,11 @@ if not logger.handlers:  # Add handler only if not already present
 
 
 class NodeClient:
-    def __init__(self, host='localhost', port=6003, requests_per_second=10, concurrent_requests=1):
+    def __init__(self, host='localhost',
+                 port=6003,
+                 requests_per_second=1000,
+                 concurrent_requests=3,
+                 app_name='simple_app'):
         """Initialize NodeClient with host, port, and request rate parameters."""
         self.logger = logging.getLogger(f"NodeClient_{host}:{port}")
         self.host = host
@@ -27,6 +31,7 @@ class NodeClient:
         self.requests_per_second = requests_per_second
         self.concurrent_requests = concurrent_requests
         self.url = f"http://{self.host}:{self.port}/node/batches"
+        self.app_name = app_name
         self.results = []
         self.start_time = None
         self.is_down = False  # Track if node is currently down
@@ -39,7 +44,7 @@ class NodeClient:
         """Send a batch (POST request) to the server with form data, handle connection errors."""
         async with semaphore:
             batch_data = {
-                'simple_app': [self.generate_random_string() for _ in range(10)]
+                self.app_name: [self.generate_random_string() for _ in range(10)]
             }
             headers = {"Content-Type": "application/json",
                        "Version": VERSION}
@@ -113,7 +118,7 @@ async def main():
     client = NodeClient(
         host='localhost',
         port=6001,
-        requests_per_second=10,
+        requests_per_second=1000,
         concurrent_requests=2
     )
     try:
