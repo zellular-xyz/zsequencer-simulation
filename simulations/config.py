@@ -31,10 +31,10 @@ class SimulationConfig(BaseModel):
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
     ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL: int = Field(60, description="Interval to fetch apps and nodes")
 
-    ZSEQUENCER_NETWORK_API_BATCHES_LIMIT_VOLUME_KB: float = Field(1000,
-                                                                  description="Network API batches limit for ZSequencer KB")
-    ZSEQUENCER_NETWORK_API_BATCHES_LIMIT_TIME_MILLISECONDS: int = Field(30,
-                                                                        description="Network Timing API batches limit for ZSequencer MS")
+    ZSEQUENCER_NETWORK_SEQUENCING_RATE_LIMIT_VOLUME_KILOBYTES: float = Field(1000,
+                                                                             description="Network API batches limit for ZSequencer KB")
+    ZSEQUENCER_NETWORK_SEQUENCING_RATE_LIMIT_TIME_WINDOW_MILLISECONDS: int = Field(30,
+                                                                                   description="Network Timing API batches limit for ZSequencer MS")
 
     ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100_000_000, description="API batches limit for ZSequencer")
 
