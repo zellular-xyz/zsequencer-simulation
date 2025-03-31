@@ -12,7 +12,6 @@ from requests.exceptions import RequestException
 from web3 import Account
 
 import simulations.utils as simulations_utils
-from historical_nodes_registry import SnapShotType
 from simulations.config import SimulationConfig
 from simulations.schema import ExecutionData, KeyData
 
@@ -25,14 +24,6 @@ class DynamicNetworkSimulation:
         self._send_batches_thread = None
         self._sequencer_address = None
         self._network_nodes_state = None
-
-    def update_nodes_file(self, sequencer_address: str, nodes_snapshot: SnapShotType):
-        snapshot_dict = {node_address: node_info.dict()
-                         for node_address, node_info in nodes_snapshot.items()}
-
-        with open(self._simulation_config.ZSEQUENCER_NODES_FILE, "w") as json_file:
-            json.dump(snapshot_dict, json_file, indent=4)
-        self._sequencer_address, self._network_nodes_state = sequencer_address, nodes_snapshot
 
     def initialize_network(self, initial_network_nodes_number: int):
         simulations_utils.remove_directory(self._simulation_config.DST_DIR)
