@@ -1,18 +1,17 @@
 """This script sets up and runs a simple app network for testing."""
+import json
 import os
-import random
 import secrets
 import shutil
-import json
-import string
+from typing import Dict, List, Tuple
 from uuid import uuid4
-from typing import Dict, List, Any, Tuple
-from simulations.schema import Keys, KeyData
+
 from eigensdk.crypto.bls import attestation
-from historical_nodes_registry import NodeInfo
-from pydantic import BaseModel
 from web3 import Account
+
 import config
+from historical_nodes_registry import NodeInfo
+from simulations.schema import Keys, KeyData
 from terminal_exeuction import run_command_on_terminal
 
 
@@ -93,14 +92,51 @@ def remove_directory(path: str) -> None:
     Args:
         path: Path to the directory to remove.
     """
-    if os.path.exists(path):
+    if not os.path.exists(path):
+        print(f"Directory '{path}' does not exist.")
+        return
+
+    if not os.path.isdir(path):
+        print(f"'{path}' is not a directory.")
+        return
+
+    try:
+        shutil.rmtree(path)
+        print(f"Successfully removed '{path}' and its contents.")
+    except Exception as e:
+        print(f"Error removing directory '{path}': {e}")
+
+
+def clean_directory_except_db(path: str) -> None:
+    """
+    Remove all contents of a directory except subdirectories starting with 'db_'.
+
+    Args:
+        path: Path to the directory to clean.
+    """
+    if not os.path.exists(path):
+        print(f"Directory '{path}' does not exist.")
+        return
+
+    if not os.path.isdir(path):
+        print(f"'{path}' is not a directory.")
+        return
+
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+
+        # Skip subdirectories that start with 'db_'
+        if os.path.isdir(item_path) and item.startswith("db_"):
+            continue
+
         try:
-            shutil.rmtree(path)
-            print(f"Removed {path} and its contents")
-        except OSError as e:
-            print(f"Error: {e}")
-    else:
-        print(f"Directory {path} does not exist")
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            else:
+                os.remove(item_path)
+            print(f"Removed: {item_path}")
+        except Exception as e:
+            print(f"Error removing '{item_path}': {e}")
 
 
 def launch_node(cmd, env_variables):
@@ -129,3 +165,4 @@ APPS = {
         "public_keys": []
     }
 }
+

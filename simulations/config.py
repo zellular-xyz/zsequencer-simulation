@@ -25,7 +25,7 @@ class SimulationConfig(BaseModel):
     HISTORICAL_NODES_REGISTRY_SOCKET: str = Field(None, description="Socket for historical nodes registry", )
     ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(7000, description="Snapshot chunk size for ZSequencer")
     ZSEQUENCER_REMOVE_CHUNK_BORDER: int = Field(3, description="Chunk border for ZSequencer removal")
-    ZSEQUENCER_SEND_BATCH_INTERVAL: float = Field(0.05, description="Interval for sending transactions in ZSequencer")
+    ZSEQUENCER_SEND_BATCH_INTERVAL: float = Field(0.1, description="Interval for sending transactions in ZSequencer")
     ZSEQUENCER_SYNC_INTERVAL: float = Field(0.05, description="Sync interval for ZSequencer")
     ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
@@ -80,6 +80,10 @@ class SimulationConfig(BaseModel):
         return os.path.join(self.DST_DIR, "apps.json")
 
     @property
+    def sabotage_timeseries_nodes_state_file(self):
+        return os.path.join(self.DST_DIR, "sabotage_nodes_state.json")
+
+    @property
     def nodes_file(self):
         return os.path.join(self.DST_DIR, "nodes.json")
 
@@ -130,5 +134,6 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
             # Sequencer MalFunction Simulation config
-            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION": "true" if self.OUT_OF_REACH_SIMULATION else "false"
+            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION": "true" if self.OUT_OF_REACH_SIMULATION else "false",
+            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_TIMESERIES_NODES_STATE_FILE": self.sabotage_timeseries_nodes_state_file
         }

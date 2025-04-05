@@ -13,8 +13,8 @@ from typing import Any, List, Dict
 import requests
 from requests.exceptions import RequestException
 
-BATCH_SIZE: int = 500
-BATCH_NUMBER: int = 200
+BATCH_SIZE: int = 10
+BATCH_NUMBER: int = 10000
 CHECK_STATE_INTERVAL: float = 0.05
 THREAD_NUMBERS_FOR_SENDING_TXS = 50
 
@@ -134,14 +134,14 @@ def generate_dummy_batches(
         for _ in range(batches_count)]
 
 
-TOTAL_BATCHES_COUNT = 10_000
+TOTAL_BATCHES_COUNT = 100_000
 BULK_COUNT = 10
 
 
 def main() -> None:
     """Run the simple app."""
     app_name = 'simple_app'
-    node_url = 'http://localhost:6002'
+    node_url = 'http://localhost:6004'
 
     sender_thread: threading.Thread = threading.Thread(
         target=send_batches_in_bulk_mode, args=[node_url, app_name, TOTAL_BATCHES_COUNT, BULK_COUNT]

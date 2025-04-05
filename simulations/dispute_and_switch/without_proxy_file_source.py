@@ -2,6 +2,7 @@ import json
 
 import simulations.utils as simulations_utils
 from simulations.config import SimulationConfig
+from simulations.dispute_and_switch.schema import (NetworkData)
 from simulations.schema import ExecutionData
 
 NETWORK_NODES_COUNT = 4
@@ -10,6 +11,7 @@ NETWORK_NODES_COUNT = 4
 def main(network_nodes_num=NETWORK_NODES_COUNT):
     simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file", OUT_OF_REACH_SIMULATION=True)
     simulations_utils.remove_directory(simulation_conf.DST_DIR)
+    # simulations_utils.clean_directory_except_db(simulation_conf.DST_DIR)
 
     sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=network_nodes_num)
 
@@ -25,6 +27,31 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
 
     with open(simulation_conf.nodes_file, "w") as file:
         json.dump(nodes_info, file, indent=4)
+
+    if simulation_conf.OUT_OF_REACH_SIMULATION:
+        nodes_sabotage_state_info: NetworkData = {}
+        node_ids = sorted(list(nodes_info.keys()))
+
+        nodes_sabotage_state_info[node_ids[0]] = [
+            {'time_duration': 15, 'up': True},
+            {'time_duration': 20, 'up': False},
+        ]
+
+        nodes_sabotage_state_info[node_ids[1]] = [
+            {'time_duration': 10, 'up': True},
+            {'time_duration': 30, 'up': False},
+        ]
+
+        nodes_sabotage_state_info[node_ids[2]] = [
+            {'time_duration': 1000, 'up': True},
+        ]
+
+        nodes_sabotage_state_info[node_ids[3]] = [
+            {'time_duration': 1000, 'up': True},
+        ]
+
+        with open(simulation_conf.sabotage_timeseries_nodes_state_file, "w") as file:
+            json.dump(nodes_sabotage_state_info, file, indent=4)
 
     with open(simulation_conf.apps_file, "w") as file:
         json.dump(simulations_utils.APPS, file, indent=4)
