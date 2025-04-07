@@ -1,4 +1,5 @@
 import json
+import time
 
 import simulations.utils as simulations_utils
 from simulations.config import SimulationConfig
@@ -29,16 +30,12 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
     with open(simulation_conf.apps_file, "w") as file:
         json.dump(simulations_utils.APPS, file, indent=4)
 
-    for _, execution_data in nodes_execution_args.items():
+    sorted_ids = sorted(list(nodes_info.keys()))
+    for node_id in sorted_ids:
+        execution_data = nodes_execution_args[node_id]
         simulations_utils.bootstrap_node(env_variables=execution_data.env_variables,
                                          node_execution_cmd=execution_data.execution_cmd)
-
-        # Printing list of nodes id and socket sorted by ids for the sake of simplicity on tracing sequencer switch
-        sorted_ids = [
-            (item['id'], item['socket']) for item in
-            sorted(list(nodes_info.values()), key=lambda item: item['id'])
-        ]
-        print(sorted_ids)
+        time.sleep(1)
 
 
 if __name__ == "__main__":
