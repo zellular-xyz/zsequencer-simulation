@@ -23,9 +23,13 @@ class SimulationConfig(BaseModel):
     HISTORICAL_NODES_REGISTRY_HOST: str = Field("localhost", description="Historical nodes registry host")
     HISTORICAL_NODES_REGISTRY_PORT: int = Field(8000, description="Historical nodes registry port")
     HISTORICAL_NODES_REGISTRY_SOCKET: str = Field(None, description="Socket for historical nodes registry", )
-    ZSEQUENCER_SNAPSHOT_CHUNK: int = Field(7000, description="Snapshot chunk size for ZSequencer")
+
+    ZSEQUENCER_SNAPSHOT_CHUNK_SIZE_KB: int = Field(default=1000, description="Snapshot chunk size in kilo-bytes")
+    ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW: float = Field(default=10_000,
+                                                      description="sequencer bandwidth in unit of kilo-bytes in a single window")
+    ZSEQUENCER_PUSH_RATE_LIMIT_WINDOW_SECONDS: int = Field(default=1, description="timing window in seconds to control nodes pushing batches")
+    ZSEQUENCER_MAX_BATCH_SIZE_KB: float = Field(default=5, description="maximum allowed size of a single batch in kilo-bytes")
     ZSEQUENCER_REMOVE_CHUNK_BORDER: int = Field(3, description="Chunk border for ZSequencer removal")
-    ZSEQUENCER_SEND_BATCH_INTERVAL: float = Field(0.1, description="Interval for sending transactions in ZSequencer")
     ZSEQUENCER_SYNC_INTERVAL: float = Field(0.05, description="Sync interval for ZSequencer")
     ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
@@ -109,10 +113,9 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_HISTORICAL_NODES_REGISTRY": self.HISTORICAL_NODES_REGISTRY_SOCKET,
             "ZSEQUENCER_HOST": "localhost",
             "ZSEQUENCER_PORT": str(self.BASE_PORT + node_idx),
-            "ZSEQUENCER_SNAPSHOT_CHUNK": str(self.ZSEQUENCER_SNAPSHOT_CHUNK),
+
             "ZSEQUENCER_REMOVE_CHUNK_BORDER": str(self.ZSEQUENCER_REMOVE_CHUNK_BORDER),
             "ZSEQUENCER_THRESHOLD_PERCENT": str(self.THRESHOLD_PERCENT),
-            "ZSEQUENCER_SEND_BATCH_INTERVAL": str(self.ZSEQUENCER_SEND_BATCH_INTERVAL),
             "ZSEQUENCER_SYNC_INTERVAL": str(self.ZSEQUENCER_SYNC_INTERVAL),
             "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(self.ZSEQUENCER_FINALIZATION_TIME_BORDER),
             "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(self.ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT),
@@ -121,8 +124,13 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
             "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCE,
             "ZSEQUENCER_MODE": self.MODE,
-            # SnapShot Path
+            # rate limiting
+            "ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW": str(self.ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW),
+            "ZSEQUENCER_PUSH_RATE_LIMIT_WINDOW_SECONDS": str(self.ZSEQUENCER_PUSH_RATE_LIMIT_WINDOW_SECONDS),
+            "ZSEQUENCER_MAX_BATCH_SIZE_KB": str(self.ZSEQUENCER_MAX_BATCH_SIZE_KB),
+            # SnapShot
             "ZSEQUENCER_SNAPSHOT_PATH": os.path.join(self.DST_DIR, f"db_{node_idx}"),
+            "ZSEQUENCER_SNAPSHOT_CHUNK_SIZE_KB": str(self.ZSEQUENCER_SNAPSHOT_CHUNK_SIZE_KB),
             # Encryption Files Configs
             "ZSEQUENCER_BLS_KEY_FILE": os.path.join(self.DST_DIR, f"bls_key{node_idx}.json"),
             "ZSEQUENCER_BLS_KEY_PASSWORD": f'a{node_idx}',
