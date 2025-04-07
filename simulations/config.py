@@ -34,19 +34,10 @@ class SimulationConfig(BaseModel):
     ZSEQUENCER_FINALIZATION_TIME_BORDER: int = Field(10, description="Finalization time border for ZSequencer")
     ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT: int = Field(5, description="Timeout for signatures aggregation")
     ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL: int = Field(60, description="Interval to fetch apps and nodes")
-
-    ZSEQUENCER_NETWORK_SEQUENCING_RATE_LIMIT_VOLUME_KILOBYTES: float = Field(1000,
-                                                                             description="Network API batches limit for ZSequencer KB")
-    ZSEQUENCER_NETWORK_SEQUENCING_RATE_LIMIT_TIME_WINDOW_MILLISECONDS: int = Field(30,
-                                                                                   description="Network Timing API batches limit for ZSequencer MS")
-
-    ZSEQUENCER_API_BATCHES_LIMIT: int = Field(100_000_000, description="API batches limit for ZSequencer")
-
     ZSEQUENCER_NODES_SOURCE: str = Field("file", description="Source for nodes in ZSequencer", )
     APP_NAME: str = Field("simple_app", description="Name of the application")
     TIMESERIES_NODES_COUNT: List[int] = Field([3, 4, 6],
                                               description="count of nodes available on network at different states")
-    LOGS_DIRECTORY: str = Field("/tmp/zellular-simulation-logs", description="Directory to store logs")
     PROXY_SERVER_WORKERS_COUNT: int = Field(4, description="The number of workers count for proxy server")
     MODE: str = Field("dev", description="The stage mode of running node can be set on dev, test, prod")
 
@@ -120,7 +111,6 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_FINALIZATION_TIME_BORDER": str(self.ZSEQUENCER_FINALIZATION_TIME_BORDER),
             "ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT": str(self.ZSEQUENCER_SIGNATURES_AGGREGATION_TIMEOUT),
             "ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL": str(self.ZSEQUENCER_FETCH_APPS_AND_NODES_INTERVAL),
-            "ZSEQUENCER_API_BATCHES_LIMIT": str(self.ZSEQUENCER_API_BATCHES_LIMIT),
             "ZSEQUENCER_INIT_SEQUENCER_ID": sequencer_initial_address,
             "ZSEQUENCER_NODES_SOURCE": self.ZSEQUENCER_NODES_SOURCE,
             "ZSEQUENCER_MODE": self.MODE,
