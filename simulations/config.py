@@ -42,7 +42,9 @@ class SimulationConfig(BaseModel):
     MODE: str = Field("dev", description="The stage mode of running node can be set on dev, test, prod")
 
     # Sequencer Malfunction config
-    OUT_OF_REACH_SIMULATION: bool = Field(False, description="")
+    OUT_OF_REACH_SIMULATION: bool = Field(False, description="out of reach simulation flag")
+
+    CHECK_REACHABILITY_OF_NODE_URL: bool = Field(False, description="check reachability of node flag")
 
     class Config:
         validate_assignment = True
@@ -132,6 +134,8 @@ class SimulationConfig(BaseModel):
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_VOLUME": str(2000),
             "ZSEQUENCER_PROXY_FLUSH_THRESHOLD_TIMEOUT": "0.1",
             # Sequencer MalFunction Simulation config
-            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION": "true" if self.OUT_OF_REACH_SIMULATION else "false",
-            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_TIMESERIES_NODES_STATE_FILE": self.sabotage_timeseries_nodes_state_file
+            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION": str(self.OUT_OF_REACH_SIMULATION).lower(),
+            "ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_TIMESERIES_NODES_STATE_FILE": self.sabotage_timeseries_nodes_state_file,
+            # Reachability Flag
+            "ZSEQUENCER_CHECK_REACHABILITY_OF_NODE_URL": str(self.CHECK_REACHABILITY_OF_NODE_URL).lower()
         }
