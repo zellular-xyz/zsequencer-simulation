@@ -57,9 +57,11 @@ def generate_privates_and_nodes_info() -> tuple[list[str], dict[str, Any]]:
         ecdsa_private_key: str = secrets.token_hex(32)
         ecdsa_privates_list.append(ecdsa_private_key)
         address: str = Account().from_key(ecdsa_private_key).address.lower()
+        pubkeyG2_X, pubkeyG2_Y = attestation.g2_to_tupple(bls_key_pair.pub_g2)
         nodes_info_dict[address] = {
             "id": address,
-            "public_key_g2": bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
+            "pubkeyG2_X": pubkeyG2_X,
+            "pubkeyG2_Y": pubkeyG2_Y,
             "address": address,
             "socket": f"http://127.0.0.1:{str(BASE_PORT + i + 1)}",
             "stake": 10,
@@ -111,7 +113,8 @@ def prepare_nodes() -> None:
     nodes_registry_client = NodesRegistryClient(socket=HISTORICAL_NODES_REGISTRY_SOCKET)
     initial_snapshot = {
         id: NodeInfo(id=id,
-                     public_key_g2=node_dict.get('public_key_g2'),
+                     pubkeyG2_X=node_dict.get('pubkeyG2_X'),
+                     pubkeyG2_Y=node_dict.get('pubkeyG2_Y'),
                      address=id,
                      socket=node_dict.get('socket'),
                      stake=node_dict.get('stake'))

@@ -4,7 +4,8 @@ from typing import Dict
 
 class NodeInfo(BaseModel):
     id: str
-    public_key_g2: str
+    pubkeyG2_X: tuple
+    pubkeyG2_Y: tuple
     address: str
     socket: str
     stake: int

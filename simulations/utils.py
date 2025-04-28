@@ -44,8 +44,10 @@ BASE_PROXY_PORT = 7001
 
 
 def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10):
+    pubkeyG2_X, pubkeyG2_Y = attestation.g2_to_tupple(key_data.keys.bls_key_pair.pub_g2)
     return NodeInfo(id=key_data.address,
-                    public_key_g2=key_data.keys.bls_key_pair.pub_g2.getStr(10).decode("utf-8"),
+                    pubkeyG2_X=pubkeyG2_X,
+                    pubkeyG2_Y=pubkeyG2_Y,
                     address=key_data.address,
                     socket=f"http://localhost:{str(BASE_NODE_PORT + node_idx)}",
                     stake=stake)
