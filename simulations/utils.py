@@ -3,6 +3,7 @@ import json
 import os
 import secrets
 import shutil
+
 from typing import Dict, List, Tuple
 from uuid import uuid4
 
@@ -43,13 +44,13 @@ BASE_NODE_PORT = 6001
 BASE_PROXY_PORT = 7001
 
 
-def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10):
+def generate_node_info(node_idx: int, key_data: KeyData, stake: int = 10, node_host="localhost"):
     pubkeyG2_X, pubkeyG2_Y = attestation.g2_to_tupple(key_data.keys.bls_key_pair.pub_g2)
     return NodeInfo(id=key_data.address,
                     pubkeyG2_X=pubkeyG2_X,
                     pubkeyG2_Y=pubkeyG2_Y,
                     address=key_data.address,
-                    socket=f"http://localhost:{str(BASE_NODE_PORT + node_idx)}",
+                    socket=f"http://{node_host}:{str(BASE_NODE_PORT + node_idx)}",
                     stake=stake)
 
 
@@ -65,14 +66,12 @@ def prepare_simulation_directory(simulation_conf):
 
 def generate_node_execution_command(node_idx: int) -> str:
     """Run a command in a new terminal tab."""
-    script_dir: str = os.path.dirname(os.path.abspath(__file__))
-    parent_dir: str = os.path.dirname(script_dir)
-    os.chdir(parent_dir)
-
     virtual_env_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, config.ZSEQUENCER_PROJECT_VIRTUAL_ENV)
     node_runner_path = os.path.join(config.ZSEQUENCER_PROJECT_ROOT, 'run.py')
 
     return f"source {virtual_env_path}; python -u {node_runner_path} {str(node_idx)}; echo; read -p 'Press enter to exit...'"
+
+
 
 
 def generate_node_proxy_execution_command(port, workers) -> str:
@@ -167,4 +166,3 @@ APPS = {
         "public_keys": []
     }
 }
-

@@ -5,6 +5,30 @@ from typing import List, Tuple
 from clients.node_client import NodeClient
 
 
+def setup_logging():
+    """Configure logging with a console handler."""
+    logger = logging.getLogger("NetworkClient")
+    logger.setLevel(logging.INFO)
+
+    # Remove any existing handlers to avoid duplicates
+    if logger.handlers:
+        logger.handlers.clear()
+
+    # Create console handler with a specific format
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Define log format
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+
+    # Add handler to logger
+    logger.addHandler(console_handler)
+
+
 class NetworkClient:
     def __init__(self, targets: List[Tuple[str, int]], requests_per_second=10, concurrent_requests=1):
         """
@@ -15,6 +39,8 @@ class NetworkClient:
             requests_per_second: Requests per second for each node
             concurrent_requests: Concurrent requests allowed per node
         """
+        # Setup logging before anything else
+        setup_logging()
         self.logger = logging.getLogger("NetworkClient")
         self.clients = [
             NodeClient(
@@ -54,7 +80,7 @@ class NetworkClient:
 if __name__ == "__main__":
     # Example usage with multiple targets, some might be down
     targets = [
-        ("localhost", 6001),
+        # ("localhost", 6001),
         ("localhost", 6002),
         ("localhost", 6003),
         ("localhost", 6004),

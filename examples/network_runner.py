@@ -9,7 +9,9 @@ NETWORK_NODES_COUNT = 4
 
 
 def main(network_nodes_num=NETWORK_NODES_COUNT):
-    simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file")
+    simulation_conf = SimulationConfig(ZSEQUENCER_NODES_SOURCE="file",
+                                       ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW=1000_000,
+                                       ZSEQUENCER_SNAPSHOT_CHUNK_SIZE_KB=2000)
     simulations_utils.remove_directory(simulation_conf.DST_DIR)
 
     sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=network_nodes_num)

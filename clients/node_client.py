@@ -117,7 +117,7 @@ class NodeClient:
 async def main():
     client = NodeClient(
         host='localhost',
-        port=6001,
+        port=6002,
         requests_per_second=1000,
         concurrent_requests=2
     )

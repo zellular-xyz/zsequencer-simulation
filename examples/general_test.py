@@ -134,8 +134,8 @@ def generate_dummy_batches(
         for _ in range(batches_count)]
 
 
-TOTAL_BATCHES_COUNT = 400_000
-BULK_COUNT = 1
+TOTAL_BATCHES_COUNT = 100_000
+BULK_COUNT = 2
 
 
 def main() -> None:
