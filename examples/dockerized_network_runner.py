@@ -51,7 +51,7 @@ def ensure_docker_network():
         raise
 
 
-def run_docker_container(node_idx: int, env_variables: dict, container_name: str):
+def run_docker_container(image_name: str, node_idx: int, env_variables: dict, container_name: str):
     """Run a zsequencer node in a Docker container."""
     # Create volume paths
     node_dir = os.path.join(os.getcwd(), f"node_{node_idx}")
@@ -68,7 +68,9 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
         env_variables['ZSEQUENCER_ECDSA_KEY_FILE']: '/app/ecdsa_key.json',
         data_dir: '/db',  # Map the data directory to /db in container
         env_variables['ZSEQUENCER_APPS_FILE']: '/app/app.json',
-        env_variables['ZSEQUENCER_NODES_FILE']: '/app/nodes.json'
+        env_variables['ZSEQUENCER_NODES_FILE']: '/app/nodes.json',
+        env_variables[
+            'ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_TIMESERIES_NODES_STATE_FILE']: '/app/timeseries_nodes_state_file.json'
     }
 
     # Prepare environment variables as a dictionary
@@ -79,7 +81,10 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
         'ZSEQUENCER_ECDSA_KEY_PASSWORD': env_variables['ZSEQUENCER_ECDSA_KEY_PASSWORD'],
         'ZSEQUENCER_SNAPSHOT_PATH': '/db',
         'ZSEQUENCER_APPS_FILE': '/app/app.json',
-        'ZSEQUENCER_NODES_FILE': '/app/nodes.json'
+        'ZSEQUENCER_NODES_FILE': '/app/nodes.json',
+        # sabotage simulation envs
+        'ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_OUT_OF_REACH_SIMULATION': 'true',
+        'ZSEQUENCER_SEQUENCER_SABOTAGE_SIMULATION_TIMESERIES_NODES_STATE_FILE': "/app/timeseries_nodes_state_file.json"
     }
 
     # Add all other environment variables
@@ -106,7 +111,7 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
     cmd.extend(["-p", f"{port}:{port}"])
 
     # Add image name
-    cmd.append("zellular/zsequencer:latest")
+    cmd.append(image_name)
 
     # Run the container
     try:
@@ -132,16 +137,14 @@ def clean_docker_containers(network_nodes_num: int):
 
 
 def main(network_nodes_num=NETWORK_NODES_COUNT):
-    # Clean up existing containers
     clean_docker_containers(network_nodes_num)
 
     # Todo: should be able to build docker image on local
     # docker_image = build_docker_image()
     docker_image = "zellular/zsequencer:latest"
 
-    # Ensure Docker network exists
     ensure_docker_network()
-    #
+
     simulation_conf = SimulationConfig(
         ZSEQUENCER_NODES_SOURCE="file",
         ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW=1000_000,
@@ -151,16 +154,25 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
     sequencer_address, network_keys = simulations_utils.generate_network_keys(network_nodes_num=network_nodes_num)
     nodes_execution_args = {}
     nodes_info = {}
+    nodes_sabotage_state_config = {}
 
     for idx, key_data in enumerate(network_keys):
         simulation_conf.prepare_node(node_idx=idx, keys=key_data.keys)
         container_name = f'zsequencer-node-{idx}'
+
+        # node info
         nodes_info[key_data.address] = simulations_utils.generate_node_info(
             node_idx=idx,
             key_data=key_data,
             node_host=container_name
         ).dict()
-        
+
+        # sabotage node state config
+        nodes_sabotage_state_config[key_data.address] = {
+            "time_duration": 1000,
+            "up": True
+        }
+
         # Update the environment variables to use container name instead of localhost
         env_vars = simulation_conf.to_dict(
             node_idx=idx,
@@ -169,7 +181,7 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
         # Update the host in ZSEQUENCER_HOST if it exists
         if 'ZSEQUENCER_HOST' in env_vars:
             env_vars['ZSEQUENCER_HOST'] = container_name
-            
+
         nodes_execution_args[key_data.address] = ExecutionData(
             execution_cmd=simulations_utils.generate_node_execution_command(idx),
             env_variables=env_vars
@@ -178,6 +190,9 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
     # Writing nodes info on host disk
     with open(simulation_conf.nodes_file, "w") as file:
         json.dump(nodes_info, file, indent=4)
+
+    with open(simulation_conf.sabotage_timeseries_nodes_state_file, "w") as file:
+        json.dump(nodes_sabotage_state_config, file, indent=4)
 
     # Writing apps info on host disk
     with open(simulation_conf.apps_file, "w") as file:
@@ -194,6 +209,7 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
                        capture_output=True)
 
         run_docker_container(
+            image_name=docker_image,
             node_idx=idx,
             env_variables=execution_data.env_variables,
             container_name=container_name
