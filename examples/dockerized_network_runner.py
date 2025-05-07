@@ -53,9 +53,6 @@ def ensure_docker_network():
 
 def run_docker_container(node_idx: int, env_variables: dict, container_name: str):
     """Run a zsequencer node in a Docker container."""
-    # Create volume paths
-    node_dir = os.path.join(os.getcwd(), f"node_{node_idx}")
-    os.makedirs(node_dir, exist_ok=True)
 
     # Get the data directory path from simulation config
     data_dir = env_variables['ZSEQUENCER_SNAPSHOT_PATH']
@@ -66,7 +63,7 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
     volumes = {
         env_variables['ZSEQUENCER_BLS_KEY_FILE']: '/app/bls_key.json',
         env_variables['ZSEQUENCER_ECDSA_KEY_FILE']: '/app/ecdsa_key.json',
-        data_dir: '/db',  # Map the data directory to /db in container
+        env_variables['ZSEQUENCER_SNAPSHOT_PATH']: '/db',
         env_variables['ZSEQUENCER_APPS_FILE']: '/app/app.json',
         env_variables['ZSEQUENCER_NODES_FILE']: '/app/nodes.json'
     }
