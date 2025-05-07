@@ -73,19 +73,13 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
 
     # Prepare environment variables as a dictionary
     docker_env = {
+        **env_variables,
         'ZSEQUENCER_BLS_KEY_FILE': '/app/bls_key.json',
-        'ZSEQUENCER_BLS_KEY_PASSWORD': env_variables['ZSEQUENCER_BLS_KEY_PASSWORD'],
         'ZSEQUENCER_ECDSA_KEY_FILE': '/app/ecdsa_key.json',
-        'ZSEQUENCER_ECDSA_KEY_PASSWORD': env_variables['ZSEQUENCER_ECDSA_KEY_PASSWORD'],
         'ZSEQUENCER_SNAPSHOT_PATH': '/db',
         'ZSEQUENCER_APPS_FILE': '/app/app.json',
         'ZSEQUENCER_NODES_FILE': '/app/nodes.json'
     }
-
-    # Add all other environment variables
-    for key, value in env_variables.items():
-        if key not in docker_env:
-            docker_env[key] = value
 
     # Construct docker run command
     cmd = ["docker", "run", "-d", "--name", container_name]
@@ -109,6 +103,7 @@ def run_docker_container(node_idx: int, env_variables: dict, container_name: str
     cmd.append("zellular/zsequencer:latest")
 
     # Run the container
+    print(container_name , ' : ' ,cmd)
     try:
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
