@@ -51,7 +51,7 @@ def ensure_docker_network():
         raise
 
 
-def run_docker_container(node_idx: int, env_variables: dict, container_name: str):
+def run_docker_container(env_variables: dict, container_name: str):
     """Run a zsequencer node in a Docker container."""
 
     # Get the data directory path from simulation config
@@ -186,7 +186,6 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
                        capture_output=True)
 
         run_docker_container(
-            node_idx=idx,
             env_variables=execution_data.env_variables,
             container_name=container_name
         )
