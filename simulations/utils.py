@@ -40,7 +40,7 @@ def generate_network_keys(network_nodes_num: int) -> Tuple[str, List[KeyData]]:
     return sequencer_address, network_keys
 
 
-BASE_NODE_PORT = 6001
+BASE_NODE_PORT = 6005
 BASE_PROXY_PORT = 7001
 
 

@@ -51,7 +51,7 @@ def ensure_docker_network():
         raise
 
 
-def run_docker_container(env_variables: dict, container_name: str):
+def run_docker_container(image_name: str, container_name: str, env_variables: dict):
     """Run a zsequencer node in a Docker container."""
 
     # Get the data directory path from simulation config
@@ -99,8 +99,6 @@ def run_docker_container(env_variables: dict, container_name: str):
     # Add image name
     cmd.append("zellular/zsequencer:latest")
 
-    # Run the container
-    print(container_name , ' : ' ,cmd)
     try:
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
@@ -127,15 +125,12 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
     # Clean up existing containers
     clean_docker_containers(network_nodes_num)
 
-    # Todo: should be able to build docker image on local
-    # docker_image = build_docker_image()
-    docker_image = "zellular/zsequencer:latest"
-
     # Ensure Docker network exists
     ensure_docker_network()
-    #
+
     simulation_conf = SimulationConfig(
         ZSEQUENCER_NODES_SOURCE="file",
+        BASE_PORT=6005,
         ZSEQUENCER_BANDWIDTH_KB_PER_WINDOW=1000_000,
         ZSEQUENCER_SNAPSHOT_CHUNK_SIZE_KB=2000
     )
@@ -152,7 +147,7 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
             key_data=key_data,
             node_host=container_name
         ).dict()
-        
+
         # Update the environment variables to use container name instead of localhost
         env_vars = simulation_conf.to_dict(
             node_idx=idx,
@@ -161,7 +156,7 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
         # Update the host in ZSEQUENCER_HOST if it exists
         if 'ZSEQUENCER_HOST' in env_vars:
             env_vars['ZSEQUENCER_HOST'] = container_name
-            
+
         nodes_execution_args[key_data.address] = ExecutionData(
             execution_cmd=simulations_utils.generate_node_execution_command(idx),
             env_variables=env_vars
@@ -186,8 +181,9 @@ def main(network_nodes_num=NETWORK_NODES_COUNT):
                        capture_output=True)
 
         run_docker_container(
+            image_name="zellular/zsequencer:latest",
+            container_name=container_name,
             env_variables=execution_data.env_variables,
-            container_name=container_name
         )
         time.sleep(1)
 
